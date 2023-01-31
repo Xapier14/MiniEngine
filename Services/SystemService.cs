@@ -3,12 +3,14 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using MiniEngine.Utility;
+using MiniEngine.Collections;
 
 namespace MiniEngine
 {
     public static class SystemService
     {
         private static readonly List<System> _systems = new();
+        private static readonly SystemList _systemList = new();
         private static readonly Dictionary<Type, (System, MethodInfo)> _associatedHandlers = new();
 
         internal static void LoadSystems()
