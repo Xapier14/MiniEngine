@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using MiniEngine.Components;
 using MiniEngine.Utility;
 using MiniEngine.Utility.Logging;
 
@@ -33,6 +34,7 @@ namespace MiniEngine
             _initializers.AddRange(new Func<bool>[]
             {
                 InitializeSDL,
+                SystemService.InitializeWithDefaultSystems,
                 InitializeGameAssets
             });
         }
@@ -47,6 +49,7 @@ namespace MiniEngine
                 LoggingService.Fatal("An internal initializer returned an error!");
                 return true;
             }
+            LoggingService.Debug("Finished core initializers.", _externalInitializers.Count);
 
             if (!_externalInitializers.Any())
             {
@@ -98,7 +101,6 @@ namespace MiniEngine
 
         private static bool InitializeGameAssets()
         {
-            SystemService.LoadSystems();
             return false;
         }
 
