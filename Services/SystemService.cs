@@ -121,6 +121,16 @@ namespace MiniEngine
             list.Remove(component);
         }
 
+        public static int CountComponents()
+        {
+            return _components.Sum((kp) => kp.Value.Count);
+        }
+
+        public static int CountSystems()
+        {
+            return _systemList.Count();
+        }
+
         public static void PurgeComponents()
         {
             foreach (var (_, list) in _components)

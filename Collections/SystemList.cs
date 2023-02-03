@@ -187,6 +187,19 @@ namespace MiniEngine.Collections
             return this.FirstOrDefault<SystemNode>(system => system?.Value?.GetType() == type);
         }
 
+        public int Count()
+        {
+            var count = 0;
+            var node = _head;
+            while (node != null)
+            {
+                count++;
+                node = node.Next;
+            }
+
+            return count;
+        }
+
         public void Add(System system)
         {
             if (_head is null)
