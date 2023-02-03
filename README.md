@@ -2,7 +2,7 @@
 A full-fledged cross-platform 2D Game Engine.
 
 ## Getting Started
-> Placeholder text
+> Under Construction
 
 ## Progress
 ### Current State
@@ -17,11 +17,11 @@ A full-fledged cross-platform 2D Game Engine.
   - ~Create engine init and cleanup~
   - Create engine loop
 - Create Entity Component System
-  - Create System Service (Register & Execute)
+  - ~Create System Service (Register & Execute)~
     - ~Support user-defined systems~
   - ~Add wiring via reflection~
   - Implement Basic Components and Systems
-    - Add Transform and TransformSystem
+    - ~Add Transform and TransformSystem~
     - Add Motion and MotionSystem
     - Add Sprite and SpriteSystem
     - Add Input and InputSystem
