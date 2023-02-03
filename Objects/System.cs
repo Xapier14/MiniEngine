@@ -1,12 +1,45 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.Reflection;
+using MiniEngine.Utility;
 
 namespace MiniEngine
 {
     public abstract class System
     {
+        private long? _lastTick = null;
+        public double DeltaTime { get; private set; } = 0.0;
+
+        internal void HandleComponents(IEnumerable<Component> components)
+        {
+            if (_lastTick is { } lastTick)
+            {
+                var thisTick = DateTime.Now.Ticks;
+                DeltaTime = TimeSpan.FromTicks(thisTick - lastTick).TotalMilliseconds / 1000.0;
+                _lastTick = thisTick;
+            }
+
+            foreach (var component in components)
+            {
+                var systemType = GetType();
+                var componentType = component.GetType();
+                var handler = systemType.GetMethod(
+                    "HandleComponent",
+                    BindingFlags.Public | BindingFlags.Instance,
+                    new []
+                    {
+                        componentType
+                    });
+                if (handler == null)
+                {
+                    LoggingService.Error(
+                        "System {0} does not handle component {1}.",
+                        systemType.Name,
+                        componentType.Name);
+                    continue;
+                }
+                handler.Invoke(this, new object?[] { component });
+            }
+        }
     }
 }

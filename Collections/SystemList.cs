@@ -120,6 +120,8 @@ namespace MiniEngine.Collections
                 case { Next: null }:
                     return false;
                 case null:
+                    if (_head == null)
+                        return false;
                     _current = _head;
                     return true;
                 default:
@@ -151,7 +153,7 @@ namespace MiniEngine.Collections
 
     public class SystemList : IEnumerable<System>, IEnumerable<SystemNode>
     {
-        private SystemNode? _head = null;
+        private SystemNode? _head;
 
         IEnumerator<System> IEnumerable<System>.GetEnumerator()
         {
@@ -204,6 +206,22 @@ namespace MiniEngine.Collections
                 Previous = lastNode
             };
             lastNode.Next = newNode;
+        }
+
+        private List<SystemNode> ToNodeList()
+        {
+            return ((IEnumerable<SystemNode>)this).ToList();
+        }
+
+        public void Clear()
+        {
+            var list = ToNodeList();
+            list.ForEach(x =>
+            {
+                x.Next = null;
+                x.Previous = null;
+            });
+            _head = null;
         }
     }
 }
