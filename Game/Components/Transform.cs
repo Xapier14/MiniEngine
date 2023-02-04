@@ -1,18 +1,11 @@
-﻿
-using MiniEngine;
+﻿using System;
 
 namespace MiniEngine.Components
 {
-    [HandledBy<TransformSystem>]
     public class Transform : Component
     {
-        public int X { get; set; }
-        public int Y { get; set; }
-        private double _rotation;
-        public double Rotation
-        {
-            get => _rotation;
-            set => _rotation = value % 360.0;
-        }
+        public Vector2F Translate = Vector2F.Zero;
+        public int TranslateX => (int)Math.Round(Translate.X);
+        public int TranslateY => (int)Math.Round(Translate.Y);
     }
 }

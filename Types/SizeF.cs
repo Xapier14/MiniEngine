@@ -33,6 +33,11 @@ public struct SizeF : IEquatable<SizeF>, IEquatable<Size>
         return HashCode.Combine(Width, Height);
     }
 
+    public override string ToString()
+    {
+        return $"{Width}x{Height}";
+    }
+
     public static implicit operator SizeF((int w, int h) size)
     {
         return new SizeF(size.w, size.h);

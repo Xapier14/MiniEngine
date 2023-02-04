@@ -10,6 +10,7 @@ using static SDL2.SDL;
 
 namespace MiniEngine
 {
+    public class TestEntity : Entity {}
     public static class GameEngine
     {
         private static bool _isInitialized = false;
@@ -101,6 +102,7 @@ namespace MiniEngine
 
         private static bool InitializeGameAssets()
         {
+            // TODO: Add asset loader
             return false;
         }
 
@@ -168,7 +170,14 @@ namespace MiniEngine
             }
             IsRunning = true;
 
+            WindowService.CreateWindow();
+
             // loop here
+            // TODO: add loop logic
+            while (true)
+            {
+                SystemService.ProcessSystems();
+            }
 
             GracefulExit();
             return false;

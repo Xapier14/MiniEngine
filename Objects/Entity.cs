@@ -8,9 +8,11 @@ namespace MiniEngine
     public abstract class Entity
     {
         private readonly List<Component> _components = new();
-        private readonly Guid _guid = Guid.NewGuid();                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              
-
+        private readonly Guid _guid = Guid.NewGuid();
         public string Id => $"{GetType()}#{_guid}";
+
+        internal IReadOnlyList<Component> GetComponents()
+            => _components;
 
         public void AddComponent<T>() where T : Component, new()
         {

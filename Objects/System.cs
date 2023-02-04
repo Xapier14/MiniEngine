@@ -7,8 +7,8 @@ namespace MiniEngine
 {
     public abstract class System
     {
-        private long? _lastTick = null;
-        public double DeltaTime { get; private set; } = 0.0;
+        private long? _lastTick;
+        public double DeltaTime { get; private set; }
 
         internal void HandleComponents(IEnumerable<Component> components)
         {
@@ -17,6 +17,10 @@ namespace MiniEngine
                 var thisTick = DateTime.Now.Ticks;
                 DeltaTime = TimeSpan.FromTicks(thisTick - lastTick).TotalMilliseconds / 1000.0;
                 _lastTick = thisTick;
+            }
+            else
+            {
+                _lastTick = DateTime.Now.Ticks;
             }
 
             foreach (var component in components)

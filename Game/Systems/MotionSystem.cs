@@ -8,6 +8,7 @@ using MiniEngine.Utility;
 
 namespace MiniEngine
 {
+    [HandlesComponent<Motion>]
     public class MotionSystem : System
     {
         public MotionSystem()
@@ -17,6 +18,15 @@ namespace MiniEngine
 
         public void HandleComponent(Motion motionComponent)
         {
+            var component = motionComponent.Owner;
+            if (component is null)
+                return;
+            var acceleration = motionComponent.Acceleration;
+            var velocity = motionComponent.Velocity;
+
+            velocity.X += acceleration.X * 1f;
+            velocity.Y += acceleration.X * 1f;
+            motionComponent.Velocity = velocity;
         }
     }
 }
