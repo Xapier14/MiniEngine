@@ -15,14 +15,14 @@ A full-fledged cross-platform 2D Game Engine.
   - Color
 - Create BaseEngine Structure
   - ~Create engine init and cleanup~
-  - Create engine loop
+  - ~Create engine loop~
 - Create Entity Component System
   - ~Create System Service (Register & Execute)~
     - ~Support user-defined systems~
   - ~Add wiring via reflection~
   - Implement Basic Components and Systems
     - ~Add Transform and TransformSystem~
-    - Add Motion and MotionSystem
+    - ~Add Motion and MotionSystem~
     - Add Sprite and SpriteSystem
     - Add Input and InputSystem
   - Implement Complex Components and Systems
@@ -30,7 +30,7 @@ A full-fledged cross-platform 2D Game Engine.
     - Add Script and ScriptSystem
     - Design a scripting API
 - Create Windowing System
-  - Implement window creation and respect engine configuration
+  - ~Implement window creation and respect engine configuration~
   - Add additional window configuration methods to be ran at runtime
 - Create Resource Manager
   - Create packed file format
