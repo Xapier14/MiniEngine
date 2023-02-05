@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using MiniEngine.Utility;
 
@@ -7,8 +8,22 @@ namespace MiniEngine
 {
     public abstract class System
     {
+        private readonly Dictionary<Type, MethodInfo> _methodCache = new();
         private long? _lastTick;
         public double DeltaTime { get; private set; }
+
+        internal void PreCacheHandlers()
+        {
+            var systemType = GetType();
+            var methods = systemType.GetMethods(BindingFlags.Public | BindingFlags.Instance)
+                .Where(methodInfo => methodInfo.Name == "HandleComponent" &&
+                                     methodInfo.GetParameters().Length == 1);
+            foreach (var method in methods)
+            {
+                var handledComponentType = method.GetParameters()[0].ParameterType;
+                _methodCache.TryAdd(handledComponentType, method);
+            }
+        }
 
         internal void HandleComponents(IEnumerable<Component> components)
         {
@@ -25,24 +40,27 @@ namespace MiniEngine
 
             foreach (var component in components)
             {
-                var systemType = GetType();
-                var componentType = component.GetType();
-                var handler = systemType.GetMethod(
-                    "HandleComponent",
-                    BindingFlags.Public | BindingFlags.Instance,
-                    new []
-                    {
-                        componentType
-                    });
-                if (handler == null)
+                if (!_methodCache.TryGetValue(component.GetType(), out var methodInfo))
                 {
-                    LoggingService.Error(
-                        "System {0} does not handle component {1}.",
-                        systemType.Name,
-                        componentType.Name);
-                    continue;
+                    var systemType = GetType();
+                    var componentType = component.GetType();
+                    methodInfo = systemType.GetMethod(
+                        "HandleComponent",
+                        BindingFlags.Public | BindingFlags.Instance,
+                        new []
+                        {
+                            componentType
+                        });
+                    if (methodInfo == null)
+                    {
+                        LoggingService.Error(
+                            "System {0} does not handle component {1}.",
+                            systemType.Name,
+                            componentType.Name);
+                        continue;
+                    }
                 }
-                handler.Invoke(this, new object?[] { component });
+                methodInfo.Invoke(this, new object?[] { component });
             }
         }
     }

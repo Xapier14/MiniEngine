@@ -53,5 +53,10 @@ namespace MiniEngine
             GameWindow = new GameWindow(windowSize, windowPtr, rendererPtr);
             LoggingService.Info("Created window {0}.", windowSize);
         }
+
+        internal static void PumpEvents()
+        {
+            _ = SDL_PollEvent(out _);
+        }
     }
 }

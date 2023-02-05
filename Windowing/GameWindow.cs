@@ -8,15 +8,15 @@ namespace MiniEngine.Windowing
 {
     public class GameWindow
     {
-        private Size _windowSize;
-        private readonly IntPtr _windowPtr;
-        private readonly IntPtr _rendererPtr;
+        public Size WindowSize { get; }
+        public IntPtr WindowPtr { get; }
+        public IntPtr RendererPtr { get; }
 
         internal GameWindow(Size windowSize, IntPtr windowPtr, IntPtr rendererPtr)
         {
-            _windowSize = windowSize;
-            _windowPtr = windowPtr;
-            _rendererPtr = rendererPtr;
+            WindowSize = windowSize;
+            WindowPtr = windowPtr;
+            RendererPtr = rendererPtr;
         }
     }
 }

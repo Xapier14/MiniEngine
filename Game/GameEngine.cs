@@ -171,12 +171,13 @@ namespace MiniEngine
             IsRunning = true;
 
             WindowService.CreateWindow();
-
-            // loop here
-            // TODO: add loop logic
-            while (true)
+            
+            while (IsRunning)
             {
+                GraphicsService.RenderClear();
+                WindowService.PumpEvents();
                 SystemService.ProcessSystems();
+                GraphicsService.RenderPresent();
             }
 
             GracefulExit();

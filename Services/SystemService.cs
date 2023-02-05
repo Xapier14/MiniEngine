@@ -86,6 +86,7 @@ namespace MiniEngine
                 return;
             }
             var system = (System)constructor.Invoke(null);
+            system.PreCacheHandlers();
             _components.Add(systemType, new List<Component>());
             if (typeof(T) == typeof(System))
             {
@@ -121,6 +122,7 @@ namespace MiniEngine
                 return;
             }
             var system = (System)constructor.Invoke(null);
+            system.PreCacheHandlers();
             _components.Add(systemType, new List<Component>());
             if (typeof(T) == typeof(System))
             {
