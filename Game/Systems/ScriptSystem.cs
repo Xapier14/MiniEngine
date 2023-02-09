@@ -15,7 +15,7 @@ namespace MiniEngine
             LoggingService.Debug("Script system initialized.");    
         }
 
-        public void HandleComponent(InputHandler inputComponent)
+        public void HandleComponent(Script scriptComponent)
         {
         }
     }

@@ -4,10 +4,10 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace MiniEngine.Components
+namespace MiniEngine
 {
-    public class InputHandler : Component
+    public interface IHandlesComponentAttribute
     {
-        
+        public Type ComponentType { get; }
     }
 }

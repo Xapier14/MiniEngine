@@ -20,8 +20,7 @@ namespace MiniEngine
                 LoggingService.Debug("Initializing default ECS systems...");
                 _systemList.Clear();
                 _components.Clear();
-                RegisterAfter<System>(typeof(InputSystem));
-                RegisterAfter<InputSystem>(typeof(ScriptSystem));
+                RegisterAfter<System>(typeof(ScriptSystem));
                 RegisterAfter<ScriptSystem>(typeof(PhysicsSystem));
                 RegisterAfter<PhysicsSystem>(typeof(MotionSystem));
                 RegisterAfter<MotionSystem>(typeof(TransformSystem));
