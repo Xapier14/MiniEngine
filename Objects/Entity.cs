@@ -47,7 +47,6 @@ namespace MiniEngine
             }
 
             var newComponent = new T();
-            newComponent.SetOwnerIfNotNull(this);
             AddComponent(newComponent);
         }
 
