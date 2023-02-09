@@ -32,6 +32,7 @@ namespace MiniEngine
                         : "<empty>");
                 return;
             }
+            component.SetOwnerIfNotNull(this);
             _components.Add(component);
         }
 
@@ -44,10 +45,9 @@ namespace MiniEngine
                     Id);
                 return;
             }
-            var newComponent = new T
-            {
-                Owner = this
-            };
+
+            var newComponent = new T();
+            newComponent.SetOwnerIfNotNull(this);
             AddComponent(newComponent);
         }
 
