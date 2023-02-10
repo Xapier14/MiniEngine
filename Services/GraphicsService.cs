@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-
+using MiniEngine.Utility;
 using static SDL2.SDL;
 
 namespace MiniEngine
@@ -14,39 +14,57 @@ namespace MiniEngine
         private static int? WindowWidth => WindowService.GameWindow?.WindowSize.Width;
         private static int? WindowHeight => WindowService.GameWindow?.WindowSize.Height;
 
+        private static bool WindowNullSoftCheck(string? from = null)
+        {
+            if (WindowService.GameWindow is not null)
+                return false;
+            LoggingService.Error($"[GraphicsService{(from != null ? $".{from}" : "")}] GameWindow is null!");
+            return true;
+
+        }
+
+        private static bool RendererNullSoftCheck(string? from = null)
+        {
+            if (RendererPtr is not null)
+                return false;
+            LoggingService.Error($"[GraphicsService{(from != null ? $".{from}" : "")}] Renderer is null!");
+            return true;
+
+        }
+
         public static void RenderClear()
         {
-            if (RendererPtr is null)
+            if (RendererNullSoftCheck("RenderClear"))
                 return;
-            _ = SDL_RenderClear(RendererPtr.Value);
+            _ = SDL_RenderClear(RendererPtr!.Value);
         }
 
         public static void RenderPresent()
         {
-            if (RendererPtr is null)
+            if (RendererNullSoftCheck("RenderPresent"))
                 return;
-            SDL_RenderPresent(RendererPtr.Value);
+            SDL_RenderPresent(RendererPtr!.Value);
         }
 
         public static Color GetDrawColor()
         {
-            if (RendererPtr is null)
+            if (RendererNullSoftCheck("GetDrawColor"))
                 throw new NoWindowInstanceException("No window instance to get draw color from.");
-            _ = SDL_GetRenderDrawColor(RendererPtr.Value, out var r, out var g, out var b, out var a);
+            _ = SDL_GetRenderDrawColor(RendererPtr!.Value, out var r, out var g, out var b, out var a);
 
             return (r, g, b, a);
         }
 
         public static void SetDrawColor(Color color)
         {
-            if (RendererPtr is null)
+            if (RendererNullSoftCheck("SetDrawColor"))
                 throw new NoWindowInstanceException("No window instance to set draw color to.");
-            _ = SDL_SetRenderDrawColor(RendererPtr.Value, color.R, color.G, color.B, color.A);
+            _ = SDL_SetRenderDrawColor(RendererPtr!.Value, color.R, color.G, color.B, color.A);
         }
 
         public static void DrawPixel(Vector2 windowVector, Color? color = null)
         {
-            if (RendererPtr is null)
+            if (RendererNullSoftCheck("DrawPixel"))
                 return;
 
             Color oldColor = default;
@@ -57,7 +75,7 @@ namespace MiniEngine
                 SetDrawColor(color.Value);
             }
 
-            _ = SDL_RenderDrawPoint(RendererPtr.Value, windowVector.X, windowVector.Y);
+            _ = SDL_RenderDrawPoint(RendererPtr!.Value, windowVector.X, windowVector.Y);
 
             if (color is not null)
             {
@@ -67,12 +85,11 @@ namespace MiniEngine
 
         public static void DrawPixel(Vector2F normalizedVector, Color? color = null)
         {
-            if (WindowWidth is null ||
-                WindowHeight is null)
+            if (WindowNullSoftCheck("DrawPixel"))
                 return;
 
             var clampedVector = Vector2F.Clamp(normalizedVector, -1, 1);
-            var windowVector = clampedVector.Denormalize((WindowWidth.Value, WindowHeight.Value));
+            var windowVector = clampedVector.Denormalize((WindowWidth!.Value, WindowHeight!.Value));
 
             DrawPixel(windowVector, color);
         }
