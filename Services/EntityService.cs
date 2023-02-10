@@ -11,6 +11,8 @@ namespace MiniEngine
 {
     public static class EntityService
     {
+        private static readonly Dictionary<Type, ConstructorInfo?> _componentConstructorCache = new();
+
         public static Entity? TryCreateEntity<T>(params object[] args) where T : Entity
         {
             var entityType = typeof(T);
@@ -22,7 +24,6 @@ namespace MiniEngine
 
             var constructors = entityType.GetConstructors();
             var entityCtr = entityType.GetConstructor(Array.Empty<Type>());
-            //var argTypes = args.Select(arg => arg.GetType()).ToArray();
             Entity? result = null;
             foreach (var constructor in constructors)
             {
@@ -38,7 +39,13 @@ namespace MiniEngine
                     foreach (var parameter in parameters)
                     {
                         var parameterType = parameter.ParameterType;
-                        var ctr = parameterType.GetConstructor(Array.Empty<Type>());
+
+                        if (!_componentConstructorCache.TryGetValue(parameterType, out var ctr))
+                        {
+                            ctr = parameterType.GetConstructor(Array.Empty<Type>());
+                            _componentConstructorCache.Add(parameterType, ctr);
+                        }
+
                         if (injectTypes.Contains(parameterType) && ctr != null)
                         {
                             argumentList.Add(ctr.Invoke(null));
