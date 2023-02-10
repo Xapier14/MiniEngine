@@ -171,12 +171,14 @@ namespace MiniEngine
             IsRunning = true;
 
             WindowService.CreateWindow();
+            Color testColor = (0, 255, 0);
             
             while (IsRunning)
             {
                 GraphicsService.RenderClear();
                 WindowService.PumpEvents();
                 SystemService.ProcessSystems();
+                GraphicsService.DrawPixel(Vector2F.Zero, testColor);
                 GraphicsService.RenderPresent();
             }
 

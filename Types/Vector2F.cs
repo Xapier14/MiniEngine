@@ -41,8 +41,11 @@ public struct Vector2F : IEquatable<Vector2F>, IEquatable<Vector2>, IEquatable<(
 
     public Vector2 Denormalize(Vector2 range)
     {
-        var x = (int)MathF.Round(ConversionF.TestForZero(range.X * X * 0.5f));
-        var y = (int)MathF.Round(ConversionF.TestForZero(range.Y * Y * 0.5f));
+        var halfX = range.X / 2;
+        var halfY = range.Y / 2;
+
+        var x = (int)MathF.Round(ConversionF.TestForZero(halfX * X)) + halfX;
+        var y = (int)MathF.Round(ConversionF.TestForZero(halfY * Y)) + halfY;
         return new Vector2(x, y);
     }
 
@@ -59,6 +62,16 @@ public struct Vector2F : IEquatable<Vector2F>, IEquatable<Vector2>, IEquatable<(
     public override string ToString()
     {
         return $"{X}, {Y}";
+    }
+
+    public static Vector2F Clamp(Vector2F value, float min, float max)
+    {
+        return new Vector2F(Math.Clamp(value.X, min, max), Math.Clamp(value.Y, min, max));
+    }
+
+    public static Vector2F Clamp(Vector2F value, Vector2F min, Vector2F max)
+    {
+        return new Vector2F(Math.Clamp(value.X, min.X, max.X), Math.Clamp(value.Y, min.Y, max.Y));
     }
 
     public static Vector2F From(float degrees = 0.0f, float magnitude = 1.0f)

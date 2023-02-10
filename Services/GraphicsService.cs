@@ -53,7 +53,7 @@ namespace MiniEngine
 
             if (color is not null)
             {
-                oldColor = color.Value;
+                oldColor = GetDrawColor();
                 SetDrawColor(color.Value);
             }
 
@@ -71,7 +71,9 @@ namespace MiniEngine
                 WindowHeight is null)
                 return;
 
-            var windowVector = normalizedVector.Denormalize((WindowWidth.Value, WindowHeight.Value));
+            var clampedVector = Vector2F.Clamp(normalizedVector, -1, 1);
+            var windowVector = clampedVector.Denormalize((WindowWidth.Value, WindowHeight.Value));
+
             DrawPixel(windowVector, color);
         }
     }
