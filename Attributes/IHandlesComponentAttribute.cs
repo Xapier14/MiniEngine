@@ -6,8 +6,8 @@ using System.Threading.Tasks;
 
 namespace MiniEngine
 {
-    public interface IInjectAttribute
+    public interface IHandlesComponentAttribute
     {
-        public Type InjectType { get; }
+        public Type ComponentType { get; }
     }
 }
