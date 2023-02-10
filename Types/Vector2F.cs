@@ -39,6 +39,13 @@ public struct Vector2F : IEquatable<Vector2F>, IEquatable<Vector2>, IEquatable<(
         return Math.Abs(X - other.X) <= 0.001 && Math.Abs(Y - other.Y) <= 0.001;
     }
 
+    public Vector2 Denormalize(Vector2 range)
+    {
+        var x = (int)MathF.Round(ConversionF.TestForZero(range.X * X * 0.5f));
+        var y = (int)MathF.Round(ConversionF.TestForZero(range.Y * Y * 0.5f));
+        return new Vector2(x, y);
+    }
+
     public override bool Equals(object? obj)
     {
         return obj is Vector2F other && Equals(other);
