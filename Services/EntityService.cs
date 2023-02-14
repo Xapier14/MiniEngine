@@ -13,7 +13,7 @@ namespace MiniEngine
     {
         private static readonly Dictionary<Type, ConstructorInfo?> _componentConstructorCache = new();
 
-        public static Entity? TryCreateEntity<T>(params object[] args) where T : Entity
+        public static T? TryCreateEntity<T>(params object[] args) where T : Entity
         {
             var entityType = typeof(T);
             if (entityType.IsAssignableFrom(typeof(Entity)))
@@ -84,7 +84,7 @@ namespace MiniEngine
             if (result == null)
                 LoggingService.Error("Could not create entity of type {0}.", entityType.Name);
 
-            return result;
+            return (T?)result;
         }
     }
 }
