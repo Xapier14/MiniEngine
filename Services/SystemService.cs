@@ -12,6 +12,7 @@ namespace MiniEngine
         private static readonly SystemList _systemList = new();
         private static readonly Dictionary<Type, List<Component>> _components = new();
         private static readonly Dictionary<Type, List<Type>> _systems = new();
+        private static readonly Dictionary<Type, System> _systemInstanceCache = new();
 
         internal static bool InitializeWithDefaultSystems()
         {
@@ -49,7 +50,6 @@ namespace MiniEngine
             }
             if (!systemList.Contains(system))
                 systemList.Add(system);
-            LoggingService.Debug("{0} handles {1}.", system.Name, component.Name);
         }
 
         internal static T? Get<T>(object? data = null) where T : System => (T?)_systemList.FindSystemBySystemType<T>(data)?.Item1;
@@ -79,13 +79,17 @@ namespace MiniEngine
                 return;
             }
 
-            var constructor = systemType.GetConstructor(Array.Empty<Type>());
-            if (constructor is null)
+            if (!_systemInstanceCache.TryGetValue(systemType, out var system))
             {
-                LoggingService.Error("Error registering {0}, System does not have a default constructor.", systemType.Name);
-                return;
+                var constructor = systemType.GetConstructor(Array.Empty<Type>());
+                if (constructor is null)
+                {
+                    LoggingService.Error("Error registering {0}, System does not have a default constructor.", systemType.Name);
+                    return;
+                }
+                system = (System)constructor.Invoke(null);
+                _systemInstanceCache.Add(systemType, system);
             }
-            var system = (System)constructor.Invoke(null);
             system.PreCacheHandlers();
             _components.TryAdd(systemType, new List<Component>());
             if (typeof(T) == typeof(System))
@@ -113,13 +117,17 @@ namespace MiniEngine
                 return;
             }
 
-            var constructor = systemType.GetConstructor(Array.Empty<Type>());
-            if (constructor is null)
+            if (!_systemInstanceCache.TryGetValue(systemType, out var system))
             {
-                LoggingService.Error("Error registering {0}, System does not have a default constructor.", systemType.Name);
-                return;
+                var constructor = systemType.GetConstructor(Array.Empty<Type>());
+                if (constructor is null)
+                {
+                    LoggingService.Error("Error registering {0}, System does not have a default constructor.", systemType.Name);
+                    return;
+                }
+                system = (System)constructor.Invoke(null);
+                _systemInstanceCache.Add(systemType, system);
             }
-            var system = (System)constructor.Invoke(null);
             system.PreCacheHandlers();
             _components.TryAdd(systemType, new List<Component>());
             if (typeof(T) == typeof(System))
