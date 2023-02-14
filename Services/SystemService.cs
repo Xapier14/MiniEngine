@@ -20,11 +20,15 @@ namespace MiniEngine
                 LoggingService.Debug("Initializing default ECS systems...");
                 _systemList.Clear();
                 _components.Clear();
-                RegisterAfter<System>(typeof(ScriptSystem));
+                RegisterAfter<System>(typeof(ScriptSystem), ScriptEventType.BeforeUpdate);
+                RegisterAfter<ScriptSystem>(ScriptEventType.BeforeUpdate, typeof(ScriptSystem), ScriptEventType.Update);
+                RegisterAfter<ScriptSystem>(ScriptEventType.Update, typeof(ScriptSystem), ScriptEventType.AfterUpdate);
                 RegisterAfter<ScriptSystem>(typeof(PhysicsSystem));
                 RegisterAfter<PhysicsSystem>(typeof(MotionSystem));
                 RegisterAfter<MotionSystem>(typeof(TransformSystem));
-                RegisterAfter<TransformSystem>(typeof(SpriteSystem));
+                RegisterAfter<TransformSystem>(typeof(ScriptSystem), ScriptEventType.BeforeDraw);
+                RegisterAfter<ScriptSystem>(typeof(SpriteSystem));
+                RegisterAfter<SpriteSystem>(ScriptEventType.BeforeDraw, typeof(ScriptSystem), ScriptEventType.AfterDraw);
                 LoggingService.Debug("All default ECS system OK.");
             }
             catch (Exception ex)
@@ -48,7 +52,7 @@ namespace MiniEngine
             LoggingService.Debug("{0} handles {1}.", system.Name, component.Name);
         }
 
-        internal static T? Get<T>() where T : System => (T?)_systemList.FindSystemBySystemType<T>();
+        internal static T? Get<T>(object? data = null) where T : System => (T?)_systemList.FindSystemBySystemType<T>(data)?.Item1;
 
         public static void Register(Type systemType) => RegisterBefore<SpriteSystem>(systemType);
 
@@ -64,14 +68,11 @@ namespace MiniEngine
             }
         }
 
-        public static void RegisterBefore<T>(Type systemType) where T : System
-        {
-            if (_components.ContainsKey(systemType))
-            {
-                LoggingService.Error("Error registering {0}, System of the same type already exists.", systemType.Name);
-                return;
-            }
+        public static void RegisterBefore<T>(Type systemType, object? argument = null) where T : System
+            => RegisterBefore<T>(null, systemType, argument);
 
+        public static void RegisterBefore<T>(object? systemArg, Type systemType, object? argument = null) where T : System
+        {
             if (systemType.IsAssignableFrom(typeof(System)))
             {
                 LoggingService.Error("Error registering {0}, type is not assignable from System.", systemType.Name);
@@ -86,28 +87,26 @@ namespace MiniEngine
             }
             var system = (System)constructor.Invoke(null);
             system.PreCacheHandlers();
-            _components.Add(systemType, new List<Component>());
+            _components.TryAdd(systemType, new List<Component>());
             if (typeof(T) == typeof(System))
             {
-                _systemList.Add(system);
+                _systemList.Add(system, argument);
                 UpdateSystemAssociation(systemType);
                 return;
             }
-            _systemList.FindSystemNodeBySystemType<T>()?.InsertBefore(new SystemNode
+            _systemList.FindFirstSystemNodeBySystemType<T>(systemArg)?.InsertBefore(new SystemNode
             {
-                Value = system
+                Value = system,
+                Argument = argument
             });
             UpdateSystemAssociation(systemType);
         }
 
-        public static void RegisterAfter<T>(Type systemType) where T : System
-        {
-            if (_components.ContainsKey(systemType))
-            {
-                LoggingService.Error("Error registering {0}, System of the same type already exists.", systemType.Name);
-                return;
-            }
+        public static void RegisterAfter<T>(Type systemType, object? argument = null) where T : System
+            => RegisterAfter<T>(null, systemType, argument);
 
+        public static void RegisterAfter<T>(object? systemArg, Type systemType, object? argument = null) where T : System
+        {
             if (systemType.IsAssignableFrom(typeof(System)))
             {
                 LoggingService.Error("Error registering {0}, type is not assignable to System.", systemType.Name);
@@ -122,16 +121,19 @@ namespace MiniEngine
             }
             var system = (System)constructor.Invoke(null);
             system.PreCacheHandlers();
-            _components.Add(systemType, new List<Component>());
+            _components.TryAdd(systemType, new List<Component>());
             if (typeof(T) == typeof(System))
             {
-                _systemList.Add(system);
+                _systemList.Add(system, argument);
                 UpdateSystemAssociation(systemType);
                 return;
             }
-            _systemList.FindSystemNodeBySystemType<T>()?.InsertAfter(new SystemNode
+
+            var test = _systemList.FindLastSystemNodeBySystemType<T>(systemArg);
+            test?.InsertAfter(new SystemNode
             {
-                Value = system
+                Value = system,
+                Argument = argument
             });
             UpdateSystemAssociation(systemType);
         }
@@ -202,12 +204,20 @@ namespace MiniEngine
 
         internal static void ProcessSystems()
         {
-            var systemList = (IEnumerable<System>)_systemList;
+            var systemList = (IEnumerable<SystemNode>)_systemList;
+            var tickList = new List<System>();
             foreach (var system in systemList)
             {
-                if (!_components.TryGetValue(system.GetType(), out var componentList))
+                if (system.Value == null)
                     continue;
-                system.HandleComponents(componentList);
+                if (!tickList.Contains(system.Value))
+                {
+                    system.Value.UpdateTick();
+                    tickList.Add(system.Value);
+                }
+                if (!_components.TryGetValue(system.Value.GetType(), out var componentList))
+                    continue;
+                system.Value?.HandleComponents(componentList, system.Argument);
             }
         }
     }

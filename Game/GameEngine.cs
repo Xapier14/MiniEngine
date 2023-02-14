@@ -10,7 +10,6 @@ using static SDL2.SDL;
 
 namespace MiniEngine
 {
-    public class TestEntity : Entity {}
     public static class GameEngine
     {
         private static bool _isInitialized = false;

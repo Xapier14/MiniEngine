@@ -10,6 +10,7 @@ namespace MiniEngine.Collections
         public SystemNode? Next { get; set; }
 
         public System? Value { get; set; }
+        public object? Argument { get; set; }
 
         public void InsertBefore(SystemNode node)
         {
@@ -29,23 +30,20 @@ namespace MiniEngine.Collections
         public void InsertAfter(SystemNode node)
         {
             var next = Next;
-            if (next == null)
+            if (next != null)
             {
-                Next = node;
-                return;
+                next.Previous = node;
+                node.Next = next;
             }
-
-            next.Previous = node;
-            node.Next = next;
             node.Previous = this;
             Next = node;
 
         }
         
-        public static implicit operator System(SystemNode node) => node.Value!;
+        public static implicit operator (System, object?)(SystemNode node) => (node.Value!, node.Argument);
     }
 
-    public class SystemListEnumerator : IEnumerator<System>
+    public class SystemListEnumerator : IEnumerator<(System, object?)>
     {
         protected SystemNode? _current;
         protected SystemNode? _head;
@@ -57,7 +55,7 @@ namespace MiniEngine.Collections
             _head = head;
         }
 
-        System IEnumerator<System>.Current => _current!;
+        (System, object?) IEnumerator<(System, object?)>.Current => _current!;
 
         object IEnumerator.Current => _current!;
 
@@ -151,11 +149,11 @@ namespace MiniEngine.Collections
         }
     }
 
-    public class SystemList : IEnumerable<System>, IEnumerable<SystemNode>
+    public class SystemList : IEnumerable<(System, object?)>, IEnumerable<SystemNode>
     {
         private SystemNode? _head;
 
-        IEnumerator<System> IEnumerable<System>.GetEnumerator()
+        IEnumerator<(System, object?)> IEnumerable<(System, object?)>.GetEnumerator()
         {
             return new SystemListEnumerator(_head);
         }
@@ -175,16 +173,23 @@ namespace MiniEngine.Collections
             return FindSystemBySystemType<T>() != null;
         }
 
-        public System? FindSystemBySystemType<T>() where T : System
+        public (System, object?)? FindSystemBySystemType<T>(object? data = null) where T : System
         {
             var type = typeof(T);
-            return this.FirstOrDefault<System>(system => system.GetType() == type);
+            return this.FirstOrDefault<(System, object?)>(system => system.GetType() == type && system.Item2 == data);
         }
 
-        public SystemNode? FindSystemNodeBySystemType<T>() where T : System
+        public SystemNode? FindFirstSystemNodeBySystemType<T>(object? data = null) where T : System
         {
             var type = typeof(T);
-            return this.FirstOrDefault<SystemNode>(system => system?.Value?.GetType() == type);
+            return this.FirstOrDefault<SystemNode>(system => system?.Value?.GetType() == type && (system.Argument == data || system.Argument == null));
+        }
+
+        public SystemNode? FindLastSystemNodeBySystemType<T>(object? data = null) where T : System
+        {
+            var type = typeof(T);
+            return this.LastOrDefault<SystemNode>(
+                system => system.Value?.GetType() == type && (system.Argument == null || data == null || (ScriptEventType)system.Argument == (ScriptEventType)data));
         }
 
         public int Count()
@@ -200,13 +205,14 @@ namespace MiniEngine.Collections
             return count;
         }
 
-        public void Add(System system)
+        public void Add(System system, object? argument = null)
         {
             if (_head is null)
             {
                 _head = new SystemNode
                 {
-                    Value = system
+                    Value = system,
+                    Argument = argument
                 };
                 return;
             }
@@ -216,6 +222,7 @@ namespace MiniEngine.Collections
             var newNode = new SystemNode
             {
                 Value = system,
+                Argument = argument,
                 Previous = lastNode
             };
             lastNode.Next = newNode;
