@@ -12,7 +12,7 @@ A full-fledged cross-platform 2D Game Engine.
 - Create Basic Unit Structures
   - ~Size~
   - ~Vector2~
-  - Color
+  - ~Color~
 - Create BaseEngine Structure
   - ~Create engine init and cleanup~
   - ~Create engine loop~
@@ -27,7 +27,7 @@ A full-fledged cross-platform 2D Game Engine.
     - Add Input and InputSystem
   - Implement Complex Components and Systems
     - Add PhysicsBehavior and PhysicsSystem
-    - Add Script and ScriptSystem
+    - ~Add Script and ScriptSystem~
     - Design a scripting API
 - Create Windowing System
   - ~Implement window creation and respect engine configuration~
@@ -38,13 +38,12 @@ A full-fledged cross-platform 2D Game Engine.
   - Create loader to load resources into memory
   - Create texture cache
   - Create font loader
-- Create Color System
 - Create Graphics Abstraction Layer
   - Add Primitive Draw Functions
     - Rectangle
     - Ellipse
     - Cicle
-    - Pixel
+    - ~Pixel~
     - Line
     - Curved Line
   - Add Sprite Draw Functions
