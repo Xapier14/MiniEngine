@@ -189,7 +189,7 @@ namespace MiniEngine.Collections
         {
             var type = typeof(T);
             return this.LastOrDefault<SystemNode>(
-                system => system.Value?.GetType() == type && (system.Argument == null || data == null || (ScriptEventType)system.Argument == (ScriptEventType)data));
+                system => system.Value?.GetType() == type && (system.Argument == null || data == null || (ScriptEvent)system.Argument == (ScriptEvent)data));
         }
 
         public int Count()

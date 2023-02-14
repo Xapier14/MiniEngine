@@ -19,29 +19,29 @@ namespace MiniEngine
 
         public void HandleComponent(Script scriptComponent, object type)
         {
-            var eventType = (ScriptEventType)type;
+            var eventType = (ScriptEvent)type;
             scriptComponent.Delta = DeltaTime;
             switch (eventType)
             {
-                case ScriptEventType.Create:
+                case ScriptEvent.Create:
                     scriptComponent.Create?.Invoke(scriptComponent);
                     break;
-                case ScriptEventType.BeforeUpdate:
+                case ScriptEvent.BeforeUpdate:
                     scriptComponent.BeforeUpdate?.Invoke(scriptComponent);
                     break;
-                case ScriptEventType.Update:
+                case ScriptEvent.Update:
                     scriptComponent.Update?.Invoke(scriptComponent);
                     break;
-                case ScriptEventType.AfterUpdate:
+                case ScriptEvent.AfterUpdate:
                     scriptComponent.AfterUpdate?.Invoke(scriptComponent);
                     break;
-                case ScriptEventType.BeforeDraw:
+                case ScriptEvent.BeforeDraw:
                     scriptComponent.BeforeDraw?.Invoke(scriptComponent);
                     break;
-                case ScriptEventType.AfterDraw:
+                case ScriptEvent.AfterDraw:
                     scriptComponent.AfterDraw?.Invoke(scriptComponent);
                     break;
-                case ScriptEventType.Destroy:
+                case ScriptEvent.Destroy:
                     scriptComponent.Destroy?.Invoke(scriptComponent);
                     break;
                 default:

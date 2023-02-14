@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace MiniEngine
 {
-    internal enum ScriptEventType
+    internal enum ScriptEvent
     {
         Create,
         BeforeUpdate,

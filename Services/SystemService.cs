@@ -21,15 +21,15 @@ namespace MiniEngine
                 LoggingService.Debug("Initializing default ECS systems...");
                 _systemList.Clear();
                 _components.Clear();
-                RegisterAfter<System>(typeof(ScriptSystem), ScriptEventType.BeforeUpdate);
-                RegisterAfter<ScriptSystem>(ScriptEventType.BeforeUpdate, typeof(ScriptSystem), ScriptEventType.Update);
-                RegisterAfter<ScriptSystem>(ScriptEventType.Update, typeof(ScriptSystem), ScriptEventType.AfterUpdate);
+                RegisterAfter<System>(typeof(ScriptSystem), ScriptEvent.BeforeUpdate);
+                RegisterAfter<ScriptSystem>(ScriptEvent.BeforeUpdate, typeof(ScriptSystem), ScriptEvent.Update);
+                RegisterAfter<ScriptSystem>(ScriptEvent.Update, typeof(ScriptSystem), ScriptEvent.AfterUpdate);
                 RegisterAfter<ScriptSystem>(typeof(PhysicsSystem));
                 RegisterAfter<PhysicsSystem>(typeof(MotionSystem));
                 RegisterAfter<MotionSystem>(typeof(TransformSystem));
-                RegisterAfter<TransformSystem>(typeof(ScriptSystem), ScriptEventType.BeforeDraw);
+                RegisterAfter<TransformSystem>(typeof(ScriptSystem), ScriptEvent.BeforeDraw);
                 RegisterAfter<ScriptSystem>(typeof(SpriteSystem));
-                RegisterAfter<SpriteSystem>(ScriptEventType.BeforeDraw, typeof(ScriptSystem), ScriptEventType.AfterDraw);
+                RegisterAfter<SpriteSystem>(ScriptEvent.BeforeDraw, typeof(ScriptSystem), ScriptEvent.AfterDraw);
                 LoggingService.Debug("All default ECS system OK.");
             }
             catch (Exception ex)
