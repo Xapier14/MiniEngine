@@ -4,6 +4,18 @@
     <TargetFramework>net6.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <SignAssembly>False</SignAssembly>
+    <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+    <Title>MiniEngine.Tools.Compression</Title>
+    <Authors>Lance Crisang</Authors>
+    <Company />
+    <Description>A set of utility modules for compression.</Description>
+    <PackageProjectUrl>https://github.com/xapier14/MiniEngine</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/xapier14/MiniEngine</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <IncludeSymbols>True</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
   </PropertyGroup>
 
 </Project>
