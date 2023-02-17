@@ -142,7 +142,7 @@ namespace MiniEngine.Tools.AssetsViewer
             var file = SaveFileDialog_ExtractFile.OpenFile();
             var pack = File.OpenRead(_selectedPack);
             Compression.Compression.DecompressTo(
-                pack, fileOffset.Offset, fileOffset.CompressedSize,
+                pack, fileOffset.Offset, fileOffset.UncompressedSize,
                 file);
             file.Close();
             pack.Close();

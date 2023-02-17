@@ -22,7 +22,19 @@ namespace MiniEngine.Tools.Compression
             source.Seek(sourceSeek, SeekOrigin.Current);
             destination.Seek(destinationSeek, SeekOrigin.Current);
             using var decompressor = new GZipStream(source, CompressionMode.Decompress);
-            decompressor.CopyTo(destination, (int)sourceLength);
+            CopyStream(decompressor, destination, (int)sourceLength);
+        }
+
+        private static void CopyStream(Stream input, Stream output, int bytes)
+        {
+            var buffer = new byte[32768];
+            int read;
+            while (bytes > 0 && 
+                   (read = input.Read(buffer, 0, Math.Min(buffer.Length, bytes))) > 0)
+            {
+                output.Write(buffer, 0, read);
+                bytes -= read;
+            }
         }
     }
 }

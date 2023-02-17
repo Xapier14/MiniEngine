@@ -44,7 +44,7 @@ namespace MiniEngine.Tools.CLI
             fileStream.Seek(MAGIC_OFFSET, SeekOrigin.Begin);
             var countBuffer = BitConverter.GetBytes((uint)_files.Count);
             fileStream.Write(countBuffer, 0, 4);
-            foreach (var (path, _) in _files)
+            foreach (var (path, fileInfo) in _files)
             {
                 var encodedPath = Encoding.UTF8.GetBytes(path);
                 if (encodedPath.Length > ushort.MaxValue)
@@ -57,6 +57,8 @@ namespace MiniEngine.Tools.CLI
                 fileStream.Write(encodedLength, 0, 2);
                 fileStream.Write(encodedPath, 0, encodedPath.Length);
                 fileStream.Write(placeholder, 0, 4);
+                var encodedSize = BitConverter.GetBytes((uint)fileInfo.Length);
+                fileStream.Write(encodedSize, 0, 4);
             }
         }
 
@@ -83,6 +85,7 @@ namespace MiniEngine.Tools.CLI
                 fileStream.Seek(path.Length + 2, SeekOrigin.Current);
                 var encodedOffset = BitConverter.GetBytes(offset);
                 fileStream.Write(encodedOffset, 0, 4);
+                fileStream.Seek(4, SeekOrigin.Current);
             }
         }
 

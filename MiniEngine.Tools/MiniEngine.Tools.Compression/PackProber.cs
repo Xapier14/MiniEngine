@@ -12,6 +12,7 @@ namespace MiniEngine.Tools.Compression
         public string RelativePath { get; init; }
         public uint Offset { get; init; }
         public uint CompressedSize { get; internal set; }
+        public uint UncompressedSize { get; init; }
         public string Name => Path.GetFileName(RelativePath);
     };
 
@@ -40,12 +41,18 @@ namespace MiniEngine.Tools.Compression
                 var lengthBuffer = new byte[2];
                 _ = fileStream.Read(lengthBuffer, 0, 2);
                 var pathLength = BitConverter.ToUInt16(lengthBuffer);
+
                 var pathBuffer = new byte[pathLength];
                 _ = fileStream.Read(pathBuffer, 0, pathLength);
                 var filePath = Encoding.UTF8.GetString(pathBuffer);
+
                 var offsetBuffer = new byte[4];
                 _ = fileStream.Read(offsetBuffer, 0, 4);
                 var offset = BitConverter.ToUInt32(offsetBuffer);
+
+                var sizeBuffer = new byte[4];
+                _ = fileStream.Read(sizeBuffer, 0, 4);
+                var size = BitConverter.ToUInt32(sizeBuffer);
 
                 if (prevOffset is not null)
                 {
@@ -56,7 +63,8 @@ namespace MiniEngine.Tools.Compression
                 prevOffset = new FileOffset
                 {
                     Offset = offset,
-                    RelativePath = filePath
+                    RelativePath = filePath,
+                    UncompressedSize = size
                 };
             }
 
