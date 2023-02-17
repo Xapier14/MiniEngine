@@ -37,6 +37,7 @@ namespace MiniEngine.Tools.AssetsViewer
 
             ToolStripLabel_Status.Text = $"Loaded asset pack. ({files.Length} files(s))";
             TextBox_CurrentLocation.Text = _selectedPack;
+            MenuStripButton_ExtractAllFiles.Enabled = true;
             UpdateView();
         }
 
@@ -150,14 +151,53 @@ namespace MiniEngine.Tools.AssetsViewer
             ToolStripLabel_Status.Text = "Extracted 1 file.";
         }
 
-        private void ExtractAllFiles()
+        private void ExtractAllFiles(string destinationFolder)
         {
+            if (!Directory.Exists(destinationFolder))
+            {
+                MessageBox.Show("Directory not found.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
 
+            ExtractNode(destinationFolder, _data.Root);
+            ToolStripLabel_Status.Text = "Extracted all files.";
+        }
+
+        private void ExtractNode(string parentDir, TreeDataNode node)
+        {
+            if (_selectedPack is null)
+                return;
+            var nodePath = node.Metadata == "." ? string.Empty : node.Metadata;
+            var folderPath = Path.Join(parentDir, nodePath);
+
+            Directory.CreateDirectory(folderPath);
+            var sourceStream = File.OpenRead(_selectedPack);
+            foreach (var file in node.Files)
+            {
+                var filePath = Path.Join(folderPath, file.Name);
+                var destinationStream = File.OpenWrite(filePath);
+                Compression.Compression.DecompressTo(
+                    sourceStream, file.Offset, file.UncompressedSize,
+                    destinationStream);
+                destinationStream.Close();
+            }
+            sourceStream.Close();
+            foreach (var subNode in node.Children)
+                ExtractNode(folderPath, subNode);
         }
 
         private void MenuStripButton_ExtractFile_Click(object sender, EventArgs e)
         {
             ExtractCurrentlySelectedFile();
+        }
+
+        private void MenuStripButton_ExtractAllFiles_Click(object sender, EventArgs e)
+        {
+            var result = FolderBrowserDialog_ExtractAll.ShowDialog();
+            if (result == DialogResult.OK)
+            {
+                ExtractAllFiles(FolderBrowserDialog_ExtractAll.SelectedPath);
+            }
         }
     }
 }
