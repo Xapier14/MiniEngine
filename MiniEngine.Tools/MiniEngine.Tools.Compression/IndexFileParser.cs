@@ -56,6 +56,8 @@ namespace MiniEngine.Tools.Compression
             if (!IsFolder(path))
                 return Array.Empty<(string, FileInfo)>();
             var dirInfo = new DirectoryInfo(path);
+            if (dirInfo.Name.Contains('.'))
+                throw new InvalidDataException("Directory name cannot contain '.'.");
             var files = dirInfo.GetFiles();
             var ret = files.Select(file => (Path.Join(path, file.Name), file)).ToList();
             var dirs = dirInfo.GetDirectories();
