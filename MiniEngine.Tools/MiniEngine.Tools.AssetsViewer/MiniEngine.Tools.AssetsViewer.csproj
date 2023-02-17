@@ -9,7 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\MiniEngine.Tools.Compression\MiniEngine.Tools.Compression.csproj" />
+    <PackageReference Include="MiniEngine.Tools.Compression" Version="1.0.0" />
   </ItemGroup>
 
   <ItemGroup>
