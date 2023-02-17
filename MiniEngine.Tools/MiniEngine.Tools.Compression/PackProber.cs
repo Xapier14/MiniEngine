@@ -65,6 +65,7 @@ namespace MiniEngine.Tools.Compression
             prevOffset.CompressedSize = (uint)(fileStream.Length - prevOffset.Offset + 1);
             files.Add(prevOffset);
 
+            fileStream.Close();
             return files;
         }
     }
