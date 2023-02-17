@@ -1,16 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Xml;
+﻿using System.Text;
+using MiniEngine.Tools.Compression;
 
 namespace MiniEngine.Tools.CLI
 {
     internal static class Pack
     {
-        private static readonly List<string> _folders = new();
-        private static readonly List<string> _files = new();
+        private static readonly Dictionary<string, FileInfo> _files = new();
+        private static readonly Dictionary<string, uint> _offsets = new();
         private static long _totalSizeInBytes;
         private const string INDEX_FILE = ".indexfile";
 
@@ -32,24 +28,69 @@ namespace MiniEngine.Tools.CLI
 
         public static void ParseIndexFile(string path)
         {
-
-        }
-
-        public static void CompressFiles(FileStream fileStream)
-        {
-
+            var parser = IndexFileParser.Open(Path.Join(path, INDEX_FILE));
+            parser.Parse();
+            parser.Close();
+            _files.Clear();
+            foreach (var (relativePath, fileInfo) in parser.Files)
+            {
+                _files.TryAdd(relativePath, fileInfo);
+            }
         }
 
         public static void WriteIndex(FileStream fileStream)
         {
+            var placeholder = new byte[4];
+            fileStream.Seek(MAGIC_OFFSET, SeekOrigin.Begin);
+            var countBuffer = BitConverter.GetBytes((uint)_files.Count);
+            fileStream.Write(countBuffer, 0, 4);
+            foreach (var (path, _) in _files)
+            {
+                var encodedPath = Encoding.UTF8.GetBytes(path);
+                if (encodedPath.Length > ushort.MaxValue)
+                {
+                    Console.Error.WriteLine("Path is too long! Maximum length is {0}.", ushort.MaxValue);
+                    Console.Error.WriteLine("File: {0}", path);
+                    Environment.Exit(-3);
+                }
+                var encodedLength = BitConverter.GetBytes((ushort)encodedPath.Length);
+                fileStream.Write(encodedLength, 0, 2);
+                fileStream.Write(encodedPath, 0, encodedPath.Length);
+                fileStream.Write(placeholder, 0, 4);
+            }
+        }
 
+        public static void CompressFiles(string path, FileStream fileStream)
+        {
+            foreach (var (filePath, fileInfo) in _files)
+            {
+                var currentOffset = (uint)fileStream.Position;
+                var fullPath = Path.Join(path, filePath);
+                using var sourceStream = File.OpenRead(fullPath);
+                Console.Write("{0}...", filePath);
+                Compression.Compression.CompressTo(sourceStream, fileStream);
+                _totalSizeInBytes += sourceStream.Length;
+                _offsets.TryAdd(filePath, currentOffset);
+                Console.WriteLine(" OK");
+            }
+        }
+
+        public static void WriteOffsets(FileStream fileStream)
+        {
+            fileStream.Seek(MAGIC_OFFSET + 4, SeekOrigin.Begin);
+            foreach (var (path, offset) in _offsets)
+            {
+                fileStream.Seek(path.Length + 2, SeekOrigin.Current);
+                var encodedOffset = BitConverter.GetBytes(offset);
+                fileStream.Write(encodedOffset, 0, 4);
+            }
         }
 
         public static FileStream CreateOutputFile(string outFile)
         {
             if (File.Exists(outFile))
                 File.Delete(outFile);
-            var fileStream = File.Create(outFile);
+            var fileStream = File.OpenWrite(outFile);
             fileStream.Write(MAGIC_SIGNATURE, 0, MAGIC_SIGNATURE.Length);
             return fileStream;
         }
@@ -88,24 +129,32 @@ namespace MiniEngine.Tools.CLI
             Console.Write("Reading index file...");
             ParseIndexFile(path);
             Console.WriteLine(" OK");
-
-            Console.Write("Compressing files...");
+            Console.WriteLine("Total: {0} file(s)", _files.Count);
+            Console.WriteLine();
+            
             var fileStream = CreateOutputFile(outFile);
-            CompressFiles(fileStream);
-            Console.WriteLine(" OK");
-
             Console.Write("Writing index...");
             WriteIndex(fileStream);
             Console.WriteLine(" OK");
+            Console.WriteLine();
+
+            Console.WriteLine("Compressing files...");
+            CompressFiles(path, fileStream);
+            Console.WriteLine();
+
+            Console.Write("Writing offsets...");
+            WriteOffsets(fileStream);
+            Console.WriteLine(" OK");
+            Console.WriteLine();
 
             fileStream.Close();
             var fileSize = GetFinishedFileSize(fileStream.Name);
             Console.WriteLine("Finished writing to file!");
-            Console.WriteLine("Output is {0} MB in size. Compression ratio: {1}", fileSize * 0.000001, _totalSizeInBytes / fileSize);
-            Console.WriteLine();
-            Console.WriteLine("Total");
-            Console.WriteLine("\tFiles: {0}", _files.Count);
-            Console.WriteLine("\tDirectories: {0}", _folders.Count);
+            Console.WriteLine("Output is {0} MB in size. Compression ratio: {1}%",
+                fileSize * 0.000001,
+                _totalSizeInBytes > 0
+                    ? ((double)_totalSizeInBytes / fileSize) * 100.0
+                    : "NaN");
         }
     }
 }
