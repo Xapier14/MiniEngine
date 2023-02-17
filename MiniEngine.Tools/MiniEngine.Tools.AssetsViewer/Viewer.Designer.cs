@@ -28,13 +28,13 @@
         /// </summary>
         private void InitializeComponent()
         {
-            System.Windows.Forms.TreeNode treeNode4 = new System.Windows.Forms.TreeNode("audio");
-            System.Windows.Forms.TreeNode treeNode5 = new System.Windows.Forms.TreeNode("textures");
-            System.Windows.Forms.TreeNode treeNode6 = new System.Windows.Forms.TreeNode(".", new System.Windows.Forms.TreeNode[] {
-            treeNode4,
-            treeNode5});
-            System.Windows.Forms.ListViewItem listViewItem3 = new System.Windows.Forms.ListViewItem("Item 1", 0);
-            System.Windows.Forms.ListViewItem listViewItem4 = new System.Windows.Forms.ListViewItem("Item 2", 0);
+            System.Windows.Forms.TreeNode treeNode1 = new System.Windows.Forms.TreeNode("audio");
+            System.Windows.Forms.TreeNode treeNode2 = new System.Windows.Forms.TreeNode("textures");
+            System.Windows.Forms.TreeNode treeNode3 = new System.Windows.Forms.TreeNode(".", new System.Windows.Forms.TreeNode[] {
+            treeNode1,
+            treeNode2});
+            System.Windows.Forms.ListViewItem listViewItem1 = new System.Windows.Forms.ListViewItem("Item 1", 0);
+            System.Windows.Forms.ListViewItem listViewItem2 = new System.Windows.Forms.ListViewItem("Item 2", 0);
             this.TreeView_Browser = new System.Windows.Forms.TreeView();
             this.MenuStrip = new System.Windows.Forms.MenuStrip();
             this.fileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -69,15 +69,15 @@
             this.TreeView_Browser.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
             this.TreeView_Browser.Location = new System.Drawing.Point(0, 0);
             this.TreeView_Browser.Name = "TreeView_Browser";
-            treeNode4.Name = "Node1";
-            treeNode4.Text = "audio";
-            treeNode5.Name = "Node2";
-            treeNode5.Text = "textures";
-            treeNode6.Checked = true;
-            treeNode6.Name = "RootNode";
-            treeNode6.Text = ".";
+            treeNode1.Name = "Node1";
+            treeNode1.Text = "audio";
+            treeNode2.Name = "Node2";
+            treeNode2.Text = "textures";
+            treeNode3.Checked = true;
+            treeNode3.Name = "RootNode";
+            treeNode3.Text = ".";
             this.TreeView_Browser.Nodes.AddRange(new System.Windows.Forms.TreeNode[] {
-            treeNode6});
+            treeNode3});
             this.TreeView_Browser.Size = new System.Drawing.Size(200, 382);
             this.TreeView_Browser.TabIndex = 0;
             this.TreeView_Browser.AfterSelect += new System.Windows.Forms.TreeViewEventHandler(this.TreeView_Browser_Select);
@@ -126,7 +126,7 @@
             // 
             this.MenuStripButton_ExtractAllFiles.Enabled = false;
             this.MenuStripButton_ExtractAllFiles.Name = "MenuStripButton_ExtractAllFiles";
-            this.MenuStripButton_ExtractAllFiles.Size = new System.Drawing.Size(180, 22);
+            this.MenuStripButton_ExtractAllFiles.Size = new System.Drawing.Size(156, 22);
             this.MenuStripButton_ExtractAllFiles.Text = "Extract all files";
             this.MenuStripButton_ExtractAllFiles.Click += new System.EventHandler(this.MenuStripButton_ExtractAllFiles_Click);
             // 
@@ -180,8 +180,8 @@
             this.ListView_Content.Dock = System.Windows.Forms.DockStyle.Fill;
             this.ListView_Content.HeaderStyle = System.Windows.Forms.ColumnHeaderStyle.None;
             this.ListView_Content.Items.AddRange(new System.Windows.Forms.ListViewItem[] {
-            listViewItem3,
-            listViewItem4});
+            listViewItem1,
+            listViewItem2});
             this.ListView_Content.Location = new System.Drawing.Point(0, 0);
             this.ListView_Content.Name = "ListView_Content";
             this.ListView_Content.Size = new System.Drawing.Size(594, 380);
@@ -229,10 +229,6 @@
             // SaveFileDialog_ExtractFile
             // 
             this.SaveFileDialog_ExtractFile.Title = "Extract File";
-            // 
-            // FolderBrowserDialog_ExtractAll
-            // 
-            this.FolderBrowserDialog_ExtractAll.Description = "Specify where to put the extracted files.";
             // 
             // Viewer
             // 
