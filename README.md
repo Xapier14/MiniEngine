@@ -33,8 +33,8 @@ A full-fledged cross-platform 2D Game Engine.
   - ~Implement window creation and respect engine configuration~
   - Add additional window configuration methods to be ran at runtime
 - Create Resource Manager
-  - Create packed file format
-    - Create index format
+  - ~Create packed file format~
+    - ~Create index format~
   - Create loader to load resources into memory
   - Create texture cache
   - Create font loader
