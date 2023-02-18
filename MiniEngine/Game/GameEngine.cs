@@ -34,7 +34,7 @@ namespace MiniEngine
             _initializers.AddRange(new Func<bool>[]
             {
                 InitializeSDL,
-                SystemService.InitializeWithDefaultSystems,
+                SystemManager.InitializeWithDefaultSystems,
                 InitializeGameAssets
             });
         }
@@ -169,16 +169,16 @@ namespace MiniEngine
             }
             IsRunning = true;
 
-            WindowService.CreateWindow();
+            WindowManager.CreateWindow();
             Color testColor = (0, 255, 0);
             
             while (IsRunning)
             {
-                GraphicsService.RenderClear();
-                WindowService.PumpEvents();
-                SystemService.ProcessSystems();
-                GraphicsService.DrawPixel(Vector2F.Zero, testColor);
-                GraphicsService.RenderPresent();
+                Graphics.RenderClear();
+                WindowManager.PumpEvents();
+                SystemManager.ProcessSystems();
+                Graphics.DrawPixel(Vector2F.Zero, testColor);
+                Graphics.RenderPresent();
             }
 
             GracefulExit();

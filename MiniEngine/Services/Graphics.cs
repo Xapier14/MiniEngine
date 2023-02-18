@@ -8,15 +8,15 @@ using static SDL2.SDL;
 
 namespace MiniEngine
 {
-    public static class GraphicsService
+    public static class Graphics
     {
-        private static IntPtr? RendererPtr => WindowService.GameWindow?.RendererPtr;
-        private static int? WindowWidth => WindowService.GameWindow?.WindowSize.Width;
-        private static int? WindowHeight => WindowService.GameWindow?.WindowSize.Height;
+        private static IntPtr? RendererPtr => WindowManager.GameWindow?.RendererPtr;
+        private static int? WindowWidth => WindowManager.GameWindow?.WindowSize.Width;
+        private static int? WindowHeight => WindowManager.GameWindow?.WindowSize.Height;
 
         private static bool WindowNullSoftCheck(string? from = null)
         {
-            if (WindowService.GameWindow is not null)
+            if (WindowManager.GameWindow is not null)
                 return false;
             LoggingService.Error($"[GraphicsService{(from != null ? $".{from}" : "")}] GameWindow is null!");
             return true;

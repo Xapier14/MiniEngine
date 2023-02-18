@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace MiniEngine
 {
-    public static class EntityService
+    public static class Factory
     {
         private static readonly Dictionary<Type, ConstructorInfo?> _componentConstructorCache = new();
 

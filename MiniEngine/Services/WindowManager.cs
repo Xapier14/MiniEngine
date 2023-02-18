@@ -10,7 +10,7 @@ using static SDL2.SDL;
 
 namespace MiniEngine
 {
-    public static class WindowService
+    public static class WindowManager
     {
         public static GameWindow? GameWindow { get; private set; }
 

@@ -7,7 +7,7 @@ using MiniEngine.Collections;
 
 namespace MiniEngine
 {
-    public static class SystemService
+    public static class SystemManager
     {
         private static readonly SystemList _systemList = new();
         private static readonly Dictionary<Type, List<Component>> _components = new();

@@ -1,10 +1,10 @@
 ﻿namespace MiniEngine
 {
-    public static class SceneService
+    public static class SceneManager
     {
         
 
-        static SceneService()
+        static SceneManager()
         {
 
         }
