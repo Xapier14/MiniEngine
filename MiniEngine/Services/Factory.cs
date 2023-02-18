@@ -65,6 +65,7 @@ namespace MiniEngine
                         }
                     }
                     result = (Entity)constructor.Invoke(argumentList.ToArray());
+                    break;
                 }
                 catch (Exception e)
                 {
