@@ -7,6 +7,7 @@
 
   <ItemGroup>
     <PackageReference Include="Cerulean.SDL2-CS" Version="1.1.2" />
+    <PackageReference Include="MiniEngine.Tools.Compression" Version="1.0.0" />
   </ItemGroup>
 
 </Project>

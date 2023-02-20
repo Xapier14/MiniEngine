@@ -6,7 +6,8 @@ public struct EngineSetup : IReadOnlyEngineSetup
     {
         StartInFullScreen = false,
         WindowSize = (800, 600),
-        InitialWindowTitle = "MiniEngine Game"
+        InitialWindowTitle = "MiniEngine Game",
+        AssetsFile = "assets.mea"
     };
 
     public bool? StartInFullScreen { get; set; }
@@ -14,6 +15,7 @@ public struct EngineSetup : IReadOnlyEngineSetup
     public float? FpsLimit { get; set; }
     public bool? DisableGamePad { get; set; }
     public string? InitialWindowTitle { get; set; }
+    public string AssetsFile { get; set; }
 
     public void Apply(EngineSetup setup)
     {
@@ -22,5 +24,6 @@ public struct EngineSetup : IReadOnlyEngineSetup
         FpsLimit ??= setup.FpsLimit;
         DisableGamePad ??= setup.DisableGamePad;
         InitialWindowTitle ??= setup.InitialWindowTitle;
+        AssetsFile ??= setup.AssetsFile;
     }
 }

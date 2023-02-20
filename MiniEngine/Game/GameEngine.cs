@@ -37,6 +37,11 @@ namespace MiniEngine
                 SystemManager.InitializeWithDefaultSystems,
                 InitializeGameAssets
             });
+
+            _releasers.AddRange(new Func<bool>[]
+            {
+                ReleaseGameAssets
+            });
         }
 
         private static bool Initialize()
@@ -101,7 +106,13 @@ namespace MiniEngine
 
         private static bool InitializeGameAssets()
         {
-            // TODO: Add asset loader
+            Resources.UsePack(Setup.AssetsFile);
+            return false;
+        }
+
+        private static bool ReleaseGameAssets()
+        {
+            Resources.ClosePack();
             return false;
         }
 
