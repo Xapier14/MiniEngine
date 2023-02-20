@@ -7,11 +7,14 @@ using System.Threading.Tasks;
 using MiniEngine.Tools.Compression;
 using MiniEngine.Utility;
 
+using static SDL2.SDL;
+using static SDL2.SDL_image;
+
 namespace MiniEngine
 {
     public static class Resources
     {
-        public class Resource : IDisposable
+        private class Resource : IDisposable
         {
             public MemoryResource MemoryResource { get; set; }
             public int AccessCount { get; private set; } = 1;
@@ -29,7 +32,8 @@ namespace MiniEngine
             public void IncrementAccessCount()
                 => AccessCount++;
         }
-
+        
+        private static readonly Dictionary<MemoryResource, IntPtr> _textureCache = new();
         private static readonly Dictionary<string, Resource> _resourceCache = new();
         private static FileStream? _packStream;
         private static IEnumerable<FileOffset> _offsets = Array.Empty<FileOffset>();
@@ -85,6 +89,30 @@ namespace MiniEngine
             _resourceCache.Add(path, resource);
 
             return resource?.MemoryResource;
+        }
+
+        internal static IntPtr GetTexture(MemoryResource textureResource)
+        {
+            if (Graphics.RendererPtr == null)
+                throw new NoWindowInstanceException();
+
+            if (_textureCache.TryGetValue(textureResource, out var texture))
+                return texture;
+
+            var surface = IMG_Load_RW(textureResource.RWHandle, 0);
+            if (surface == IntPtr.Zero)
+            {
+                LoggingService.Error(SDL_GetError());
+            }
+            texture = SDL_CreateTextureFromSurface(Graphics.RendererPtr!.Value, surface);
+            if (texture == IntPtr.Zero)
+            {
+                LoggingService.Error(SDL_GetError());
+            }
+
+            _textureCache.Add(textureResource, texture);
+
+            return texture;
         }
     }
 }

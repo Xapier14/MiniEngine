@@ -13,7 +13,7 @@ namespace MiniEngine
     {
         private GCHandle _handle;
         private IntPtr _rwops;
-        protected IntPtr RWHandle => _rwops;
+        public IntPtr RWHandle => _rwops;
         public bool Disposed { get; private set; }
 
         public MemoryResource(byte[] data)

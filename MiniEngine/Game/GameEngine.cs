@@ -7,6 +7,7 @@ using MiniEngine.Utility.Logging;
 
 using SDL2;
 using static SDL2.SDL;
+using static SDL2.SDL_image;
 
 namespace MiniEngine
 {
@@ -97,6 +98,14 @@ namespace MiniEngine
             {
                 LoggingService.Fatal("Error initializing SDL2.");
                 LoggingService.Fatal(SDL_GetError());
+                return true;
+            }
+
+            var imgFlags = IMG_InitFlags.IMG_INIT_PNG | IMG_InitFlags.IMG_INIT_JPG;
+            if ((IMG_InitFlags)IMG_Init(imgFlags) != imgFlags)
+            {
+                LoggingService.Fatal("Error initializing SDL_image.");
+                LoggingService.Fatal(IMG_GetError());
                 return true;
             }
             

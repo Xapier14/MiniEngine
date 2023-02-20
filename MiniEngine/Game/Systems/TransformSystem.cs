@@ -31,10 +31,10 @@ namespace MiniEngine
                     );
             translate += withRelationToAngularVelocity;
             transformComponent.Translate = translate;
-            LoggingService.Debug("Handled! {0}x{1} Delta: {2}s", 
-                transformComponent.TranslateX,
-                transformComponent.TranslateY,
-                DeltaTime);
+            //LoggingService.Debug("Handled! {0}x{1} Delta: {2}s", 
+            //    transformComponent.TranslateX,
+            //    transformComponent.TranslateY,
+            //    DeltaTime);
         }
     }
 }

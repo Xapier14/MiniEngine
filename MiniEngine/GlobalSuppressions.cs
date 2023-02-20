@@ -24,3 +24,8 @@ using System.Diagnostics.CodeAnalysis;
     Justification = "A component's Motion component should be able to be modified by doing something similar to 'motion.Acceleration.X = 0f;'",
     Scope = "member",
     Target = "~F:MiniEngine.Components.Motion.Acceleration")]
+[assembly: SuppressMessage("Minor Code Smell", 
+    "S1104:Fields should not have public accessibility", 
+    Justification = "A component's Sprite component should be able to be modified by doing something similar to 'motion.Offset.X = 0;'",
+    Scope = "member", 
+    Target = "~F:MiniEngine.Components.Sprite.Offset")]

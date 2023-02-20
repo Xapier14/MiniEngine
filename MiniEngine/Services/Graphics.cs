@@ -10,7 +10,7 @@ namespace MiniEngine
 {
     public static class Graphics
     {
-        private static IntPtr? RendererPtr => WindowManager.GameWindow?.RendererPtr;
+        public static IntPtr? RendererPtr => WindowManager.GameWindow?.RendererPtr;
         private static int? WindowWidth => WindowManager.GameWindow?.WindowSize.Width;
         private static int? WindowHeight => WindowManager.GameWindow?.WindowSize.Height;
 
