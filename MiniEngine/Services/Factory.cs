@@ -46,7 +46,10 @@ namespace MiniEngine
                             _componentConstructorCache.Add(parameterType, ctr);
                         }
 
-                        if (injectTypes.Contains(parameterType) && ctr != null)
+                        var isValidInjectType = injectTypes.Contains(parameterType) ||
+                                                injectTypes.Any(type => type.IsAssignableFrom(parameterType));
+
+                        if (isValidInjectType && ctr != null)
                         {
                             argumentList.Add(ctr.Invoke(null));
                             continue;
