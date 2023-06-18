@@ -20,7 +20,7 @@ namespace MiniEngine
             {
                 var exception =
                     new EngineNotRunningException(
-                        "Call and wait for GameEngine.Run() to finish before using WindowService.");
+                        "Call and wait for GameEngine.Run() to finish before using WindowManager.");
                 LoggingService.Fatal("GameWindow could not be created. GameEngine is not running!", exception);
                 throw exception;
             }
@@ -56,7 +56,12 @@ namespace MiniEngine
 
         internal static void PumpEvents()
         {
-            _ = SDL_PollEvent(out _);
+            _ = SDL_PollEvent(out var sdlEvent);
+            if (sdlEvent.type == SDL_EventType.SDL_WINDOWEVENT)
+            {
+                if (sdlEvent.window.windowEvent == SDL_WindowEventID.SDL_WINDOWEVENT_CLOSE)
+                    GameEngine.RequestHalt();
+            }
         }
     }
 }

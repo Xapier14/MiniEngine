@@ -5,6 +5,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
+using MiniEngine.Utility;
 using static SDL2.SDL;
 
 namespace MiniEngine
@@ -12,21 +13,20 @@ namespace MiniEngine
     public class MemoryResource : IDisposable
     {
         private GCHandle _handle;
-        private IntPtr _rwops;
-        public IntPtr RWHandle => _rwops;
+        public IntPtr RwHandle { get; private set; }
         public bool Disposed { get; private set; }
 
-        public MemoryResource(byte[] data)
+        public MemoryResource(IReadOnlyCollection<byte> data)
         {
             _handle = GCHandle.Alloc(data, GCHandleType.Pinned);
             var dataPtr = _handle.AddrOfPinnedObject();
-            _rwops = SDL_RWFromMem(dataPtr, data.Length);
+            RwHandle = SDL_RWFromMem(dataPtr, data.Count);
         }
 
         public void Dispose()
         {
-            SDL_RWclose(_rwops);
-            _rwops = IntPtr.Zero;
+            SDL_RWclose(RwHandle);
+            RwHandle = IntPtr.Zero;
             _handle.Free();
             GC.SuppressFinalize(this);
             Disposed = true;
@@ -36,6 +36,17 @@ namespace MiniEngine
         {
             var data = stream.ToArray();
             return new MemoryResource(data);
+        }
+
+        public static implicit operator MemoryResource?(string resourcePath)
+        {
+            var resource = Resources.GetResource(resourcePath);
+            if (resource == null)
+            {
+                LoggingService.Error("Resource '{0}' not found.", resourcePath);
+            }
+
+            return resource;
         }
     }
 }

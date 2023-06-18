@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace MiniEngine
 {
-    [AttributeUsage(AttributeTargets.Class)]
+    [AttributeUsage(AttributeTargets.Class, AllowMultiple = true)]
     public class RequiresComponentAttribute<T> : Attribute, IRequiresComponentAttribute
     {
         public Type RequiredComponentType { get; init; }

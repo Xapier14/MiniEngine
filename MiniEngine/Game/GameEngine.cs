@@ -17,6 +17,7 @@ namespace MiniEngine
         private static bool _isReleased = false;
         private static bool _canAddInitializers = true;
         private static bool _canAddReleasers = true;
+        private static bool _requestedHalt = false;
         private static EngineSetup _setup = EngineSetup.Default;
         private static readonly List<Func<bool>> _initializers = new();
         private static readonly List<Func<bool>> _releasers = new();
@@ -140,6 +141,14 @@ namespace MiniEngine
             Environment.Exit(exitCode);
         }
 
+        public static void RequestHalt()
+        {
+            if (_requestedHalt)
+                return;
+            _requestedHalt = true;
+            LoggingService.Debug("Requested GameEngine halt.");
+        }
+
         public static void UseSetup(params EngineSetup[] additionalSetups)
         {
             if (IsRunning)
@@ -190,15 +199,19 @@ namespace MiniEngine
             IsRunning = true;
 
             WindowManager.CreateWindow();
-            Color testColor = (0, 255, 0);
             
             while (IsRunning)
             {
                 Graphics.RenderClear();
                 WindowManager.PumpEvents();
+                InputManager.UpdateState();
                 SystemManager.ProcessSystems();
-                Graphics.DrawPixel(Vector2F.Zero, testColor);
                 Graphics.RenderPresent();
+
+                if (!_requestedHalt)
+                    continue;
+                IsRunning = false;
+                LoggingService.Debug("GameEngine halted.");
             }
 
             GracefulExit();

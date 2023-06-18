@@ -54,18 +54,33 @@ public struct Vector2 : IEquatable<Vector2>, IEquatable<Vector2F>, IEquatable<(i
         return $"{X}, {Y}";
     }
 
+    public Vector2 Set(int x, int y)
+    {
+        X = x;
+        Y = y;
+        return this;
+    }
+
+    public Vector2 SetFrom(double degrees, double magnitude)
+    {
+        X = (int)Math.Round(Math.Cos(Conversion.DegreesToRadians(degrees)) * magnitude);
+        Y = (int)Math.Round(Math.Sin(Conversion.DegreesToRadians(degrees)) * magnitude);
+        return this;
+    }
+
     public static Vector2 From(double degrees = 0.0, double magnitude = 1.0)
     {
-        return new Vector2
-        {
-            X = (int)Math.Round(Math.Cos(Conversion.DegreesToRadians(degrees)) * magnitude),
-            Y = (int)Math.Round(Math.Sin(Conversion.DegreesToRadians(degrees)) * magnitude)
-        };
+        return new Vector2().SetFrom(degrees, magnitude);
     }
 
     public static implicit operator Vector2((int x, int y) vector2)
     {
         return new Vector2(vector2.x, vector2.y);
+    }
+
+    public static implicit operator Vector2(Size size)
+    {
+        return new Vector2(size.Width, size.Height);
     }
 
     public static bool operator ==(Vector2 left, Vector2 right)

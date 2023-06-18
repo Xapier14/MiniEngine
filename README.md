@@ -2,11 +2,30 @@
 A full-fledged cross-platform 2D Game Engine.
 
 ## Getting Started
-> Under Construction
+1. Reference the Project/Assembly.
+1. Create an initializer to load initial and additional game assets.
+   ```csharp
+   GameEngine.AddInitializer(() =>
+   {
+       // do stuff
+
+       return false; // return true if error occured in initializer.
+   });
+   ```
+1. Start the engine by calling `GameEngine.Run()`.
+   ```csharp
+   GameEngine.AddInitializer(() =>
+   {
+       // do stuff
+
+       return false; // return true if error occured in initializer.
+   });
+   GameEngine.Run();
+   ```
 
 ## Progress
 ### Current State
-> Unusable
+> Runnable with basic functionality included.
 
 ### Roadmap
 - Create Basic Unit Structures
@@ -35,8 +54,8 @@ A full-fledged cross-platform 2D Game Engine.
 - Create Resource Manager
   - ~Create packed file format~
     - ~Create index format~
-  - Create loader to load resources into memory
-  - Create texture cache
+  - ~Create loader to load resources into memory~
+  - ~Create texture cache~
   - Create font loader
 - Create Graphics Abstraction Layer
   - Add Primitive Draw Functions

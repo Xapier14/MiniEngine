@@ -42,4 +42,9 @@ public struct SizeF : IEquatable<SizeF>, IEquatable<Size>
     {
         return new SizeF(size.w, size.h);
     }
+
+    public static implicit operator SizeF(Vector2F vector)
+    {
+        return new SizeF(vector.X, vector.Y);
+    }
 }

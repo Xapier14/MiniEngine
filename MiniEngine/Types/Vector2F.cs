@@ -1,4 +1,5 @@
 ﻿using System;
+using Microsoft.VisualBasic.CompilerServices;
 using MiniEngine.Utility;
 
 namespace MiniEngine;
@@ -49,6 +50,25 @@ public struct Vector2F : IEquatable<Vector2F>, IEquatable<Vector2>, IEquatable<(
         return new Vector2(x, y);
     }
 
+    public Vector2F Set(float x, float y)
+    {
+        X = x;
+        Y = y;
+        return this;
+    }
+
+    public Vector2F SetFrom(float degrees, float magnitude)
+    {
+        X = ConversionF.TestForZero(MathF.Cos(ConversionF.DegreesToRadians(degrees)) * magnitude);
+        Y = ConversionF.TestForZero(MathF.Sin(ConversionF.DegreesToRadians(degrees)) * magnitude);
+        return this;
+    }
+
+    public static implicit operator Vector2F(Vector2 vector2)
+    {
+        return new Vector2F(vector2.X, vector2.Y);
+    }
+
     public override bool Equals(object? obj)
     {
         return obj is Vector2F other && Equals(other);
@@ -76,16 +96,17 @@ public struct Vector2F : IEquatable<Vector2F>, IEquatable<Vector2>, IEquatable<(
 
     public static Vector2F From(float degrees = 0.0f, float magnitude = 1.0f)
     {
-        return new Vector2F
-        {
-            X = ConversionF.TestForZero(MathF.Cos(ConversionF.DegreesToRadians(degrees)) * magnitude),
-            Y = ConversionF.TestForZero(MathF.Sin(ConversionF.DegreesToRadians(degrees)) * magnitude)
-        };
+        return new Vector2F().SetFrom(degrees, magnitude);
     }
 
     public static implicit operator Vector2F((float X, float Y) vector2F)
     {
         return new Vector2F(vector2F.X, vector2F.Y);
+    }
+
+    public static implicit operator Vector2F(SizeF size)
+    {
+        return new Vector2F(size.Width, size.Height);
     }
 
     public static bool operator ==(Vector2F left, Vector2F right)
@@ -116,5 +137,10 @@ public struct Vector2F : IEquatable<Vector2F>, IEquatable<Vector2>, IEquatable<(
     public static Vector2F operator /(Vector2F left, Vector2F right)
     {
         return new Vector2F(left.X / right.X, left.Y / right.Y);
+    }
+
+    public static Vector2F operator *(Vector2F left, float right)
+    {
+        return new Vector2F(left.X * right, left.Y * right);
     }
 }

@@ -11,6 +11,8 @@ namespace MiniEngine
 {
     public static class Factory
     {
+        private static readonly Dictionary<Type, ConstructorInfo[]> _entityInjectedConstructorCache = new();
+        private static readonly Dictionary<Type, ConstructorInfo?> _entityDefaultConstructorCache = new();
         private static readonly Dictionary<Type, ConstructorInfo?> _componentConstructorCache = new();
 
         public static T? TryCreateEntity<T>(params object[] args) where T : Entity
@@ -22,16 +24,31 @@ namespace MiniEngine
                 return null;
             }
 
-            var constructors = entityType.GetConstructors();
-            var entityCtr = entityType.GetConstructor(Array.Empty<Type>());
+            if (!_entityInjectedConstructorCache.TryGetValue(entityType, out var constructors))
+            {
+                constructors = entityType.GetConstructors();
+                _entityInjectedConstructorCache.Add(entityType, constructors);
+            }
+            if (!_entityDefaultConstructorCache.TryGetValue(entityType, out var entityCtr))
+            {
+                entityCtr = entityType.GetConstructor(Array.Empty<Type>());
+                _entityDefaultConstructorCache.Add(entityType, entityCtr);
+            }
+            
+            var autoInjectTypes = ImmutableArray<Type>.Empty;
             Entity? result = null;
             foreach (var constructor in constructors)
             {
                 try
                 {
-                    var attributes = constructor.GetCustomAttributes()
+                    var autoInjectAttributes = constructor.GetCustomAttributes()
+                        .Where(attribute => attribute.GetType().IsAssignableTo(typeof(IAutoInjectAttribute)));
+                    autoInjectTypes = autoInjectAttributes.Cast<IAutoInjectAttribute>().Select(attribute => attribute.InjectType)
+                        .ToImmutableArray();
+
+                    var injectAttributes = constructor.GetCustomAttributes()
                         .Where(attribute => attribute.GetType().IsAssignableTo(typeof(IInjectAttribute)));
-                    var injectTypes = attributes.Cast<IInjectAttribute>().Select(attribute => attribute.InjectType)
+                    var injectTypes = injectAttributes.Cast<IInjectAttribute>().Select(attribute => attribute.InjectType)
                         .ToImmutableArray();
                     var parameters = constructor.GetParameters().ToImmutableArray();
                     var argumentList = new List<object?>();
@@ -55,7 +72,7 @@ namespace MiniEngine
                             continue;
                         }
 
-                        if (argIndex < args.Length && args[argIndex].GetType() == parameterType)
+                        if (argIndex < args.Length && args[argIndex].GetType().IsAssignableTo(parameterType))
                         {
                             argumentList.Add(args[argIndex]);
                             argIndex++;
@@ -67,13 +84,28 @@ namespace MiniEngine
                             argumentList.Add(parameter.DefaultValue!);
                         }
                     }
+
+                    if (parameters.Length != argumentList.Count)
+                        continue;
                     result = (Entity)constructor.Invoke(argumentList.ToArray());
+
+                    var components = argumentList.Where(argument =>
+                        argument?.GetType().IsAssignableTo(typeof(Component)) == true).Cast<Component>();
+                    foreach (var component in components)
+                        result.AddComponent(component);
+
                     break;
                 }
                 catch (Exception e)
                 {
                     LoggingService.Trace("Error creating entity, constructor invocation threw an exception. Trying other signatures...", e);
                 }
+            }
+
+            if (result == null && entityCtr == null)
+            {
+                LoggingService.Error("Could not create entity of type {0}. No suitable constructor found.", entityType.Name);
+                return null;
             }
 
             try
@@ -86,9 +118,31 @@ namespace MiniEngine
             }
 
             if (result == null)
+            {
                 LoggingService.Error("Could not create entity of type {0}.", entityType.Name);
+                return null;
+            }
 
-            return (T?)result;
+
+            // inject auto/anonymous components
+            foreach (var autoInjectType in autoInjectTypes)
+            {
+                if (!_componentConstructorCache.TryGetValue(autoInjectType, out var ctr))
+                {
+                    ctr = autoInjectType.GetConstructor(Array.Empty<Type>());
+                    _componentConstructorCache.Add(autoInjectType, ctr);
+                }
+                var component = (Component?)ctr?.Invoke(null);
+                if (component is null)
+                {
+                    LoggingService.Error("Entity requires component {0}, but component construction failed.",
+                        autoInjectType.Name);
+                    continue;
+                }
+                result.AddComponent(component);
+            }
+
+            return (T)result;
         }
     }
 }

@@ -14,7 +14,7 @@ namespace MiniEngine
         internal IReadOnlyList<Component> GetComponents()
             => _components;
 
-        protected void AddComponent(Component component)
+        protected internal void AddComponent(Component component)
         {
             var requiredComponents = component.GetRequiredComponents().ToArray();
             var isMissingRequiredComponent = requiredComponents

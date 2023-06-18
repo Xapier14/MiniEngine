@@ -32,7 +32,7 @@ namespace MiniEngine
             if (_lastTick is { } lastTick)
             {
                 var thisTick = DateTime.Now.Ticks;
-                DeltaTime = TimeSpan.FromTicks(thisTick - lastTick).TotalMilliseconds / 1000.0;
+                DeltaTime = Math.Min(TimeSpan.FromTicks(thisTick - lastTick).TotalMilliseconds / 1000.0, 0.25);
                 _lastTick = thisTick;
             }
             else

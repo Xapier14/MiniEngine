@@ -18,15 +18,18 @@ namespace MiniEngine
 
         public void HandleComponent(Motion motionComponent)
         {
-            var component = motionComponent.Owner;
-            if (component is null)
+            var entity = motionComponent.Owner;
+            if (entity is null)
                 return;
-            var acceleration = motionComponent.Acceleration;
-            var velocity = motionComponent.Velocity;
+            var transformComponent = entity.GetComponent<Transform>();
 
-            velocity.X += acceleration.X * 1f;
-            velocity.Y += acceleration.X * 1f;
-            motionComponent.Velocity = velocity;
+            var acceleration = motionComponent.Acceleration;
+            motionComponent.Velocity += acceleration * (float)DeltaTime;
+
+            if (transformComponent != null)
+            {
+                transformComponent.Translate += motionComponent.Velocity * (float)DeltaTime;
+            }
         }
     }
 }
