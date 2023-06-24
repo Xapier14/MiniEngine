@@ -30,7 +30,7 @@ namespace MiniEngine
                 w = size.Width,
                 h = size.Height
             };
-            var texture = Resources.GetTexture(spriteComponent.SpriteResource!);
+            var texture = Graphics.GetTexture(spriteComponent.SpriteResource!);
             _ = Vector2.Zero.Equals(size)
                 ? SDL_RenderCopyF(Graphics.RendererPtr.Value, texture, IntPtr.Zero, IntPtr.Zero)
                 : SDL_RenderCopyF(Graphics.RendererPtr.Value, texture, IntPtr.Zero, ref rect);

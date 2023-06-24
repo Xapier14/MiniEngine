@@ -1,14 +1,19 @@
 ﻿using MiniEngine.Utility;
 using System;
+using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using static SDL2.SDL;
+using static SDL2.SDL_image;
 
 namespace MiniEngine
 {
     public static class Graphics
     {
+        private static readonly Dictionary<MemoryResource, IntPtr> _textureCache = new();
         public static IntPtr? RendererPtr => WindowManager.GameWindow?.RendererPtr;
         private static int? WindowWidth => WindowManager.GameWindow?.WindowSize.Width;
         private static int? WindowHeight => WindowManager.GameWindow?.WindowSize.Height;
+        private static IntPtr? _missingTexture;
 
         private static bool WindowNullSoftCheck(string? from = null)
         {
@@ -88,6 +93,57 @@ namespace MiniEngine
             var windowVector = clampedVector.Denormalize((WindowWidth!.Value, WindowHeight!.Value));
 
             DrawPixel(windowVector, color);
+        }
+        
+
+        internal static IntPtr GetTexture(MemoryResource? textureResource)
+        {
+            if (RendererPtr == null)
+                throw new NoWindowInstanceException();
+            if (!_missingTexture.HasValue)
+            {
+                var missingTexture = SDL_CreateTexture(RendererPtr.Value, SDL_PIXELFORMAT_RGBA8888,
+                    (int)SDL_TextureAccess.SDL_TEXTUREACCESS_STATIC, 2, 2);
+                var perPixelSize = SDL_BYTESPERPIXEL(SDL_PIXELFORMAT_RGBA8888);
+                var pixelData = new byte[]
+                {
+                    255, 200, 0, 255, 255, 0, 0, 0,
+                    255, 0, 0, 0, 255, 200, 0, 255
+                };
+                var handle = GCHandle.Alloc(pixelData, GCHandleType.Pinned);
+
+                var result = SDL_UpdateTexture(missingTexture, IntPtr.Zero, handle.AddrOfPinnedObject(), perPixelSize * 2);
+                if (result != 0)
+                {
+                    LoggingService.Fatal("Error creating missing texture. {0}", SDL_GetError());
+                    GameEngine.FatalExit(-1);
+                }
+                handle.Free();
+                _missingTexture = missingTexture;
+            }
+
+            if (textureResource is null)
+                return _missingTexture.Value;
+
+            if (_textureCache.TryGetValue(textureResource, out var texture))
+                return texture;
+
+            var surface = IMG_Load_RW(textureResource.RwHandle, 0);
+            if (surface == IntPtr.Zero)
+            {
+                LoggingService.Fatal(SDL_GetError());
+                GameEngine.FatalExit(-200);
+            }
+            texture = SDL_CreateTextureFromSurface(RendererPtr.Value, surface);
+            if (texture == IntPtr.Zero)
+            {
+                LoggingService.Fatal(SDL_GetError());
+                GameEngine.FatalExit(-201);
+            }
+
+            _textureCache.Add(textureResource, texture);
+
+            return texture;
         }
     }
 }
