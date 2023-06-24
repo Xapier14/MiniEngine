@@ -1,8 +1,8 @@
-﻿using System;
+﻿using MiniEngine.Utility;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using MiniEngine.Utility;
 
 namespace MiniEngine
 {
@@ -12,6 +12,8 @@ namespace MiniEngine
         private long? _lastTick;
         public double DeltaTime { get; private set; }
 
+        protected abstract void Step(object? arg);
+
         internal void PreCacheHandlers()
         {
             var systemType = GetType();
@@ -19,6 +21,7 @@ namespace MiniEngine
                 .Where(methodInfo => methodInfo.Name == "HandleComponent" &&
                                      methodInfo.GetParameters().Length == 1 ||
                                      methodInfo.GetParameters().Length == 2);
+            _methodCache.Clear();
             foreach (var method in methods)
             {
                 var handledComponentType = method.GetParameters()[0].ParameterType;
@@ -43,23 +46,24 @@ namespace MiniEngine
 
         internal void HandleComponents(IEnumerable<Component> components, object? arg = null)
         {
+            Step(arg);
             foreach (var component in components)
             {
                 if (!_methodCache.TryGetValue((component.GetType(), arg != null), out var methodInfo))
                 {
                     var systemType = GetType();
                     var componentType = component.GetType();
-                    methodInfo = arg != null ? 
+                    methodInfo = arg != null ?
                         systemType.GetMethod(
                             "HandleComponent",
-                            BindingFlags.Public | BindingFlags.Instance, new []
+                            BindingFlags.Public | BindingFlags.Instance, new[]
                             {
                                 componentType,
                                 typeof(object)
                             }) :
                         systemType.GetMethod(
                             "HandleComponent",
-                            BindingFlags.Public | BindingFlags.Instance, new []
+                            BindingFlags.Public | BindingFlags.Instance, new[]
                             {
                                 componentType
                             });

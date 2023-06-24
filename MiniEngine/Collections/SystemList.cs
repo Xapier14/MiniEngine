@@ -39,7 +39,7 @@ namespace MiniEngine.Collections
             Next = node;
 
         }
-        
+
         public static implicit operator (System, object?)(SystemNode node) => (node.Value!, node.Argument);
     }
 

@@ -1,6 +1,4 @@
-﻿using System.Linq.Expressions;
-
-namespace MiniEngine.Tools.Compression
+﻿namespace MiniEngine.Tools.Compression
 {
     public class IndexFileParser
     {

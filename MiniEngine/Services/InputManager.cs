@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using static SDL2.SDL;
+﻿using static SDL2.SDL;
 
 namespace MiniEngine
 {
@@ -29,7 +24,7 @@ namespace MiniEngine
         public bool MouseButton4 = false;
         public bool MouseButton5 = false;
 
-        public MouseState() {}
+        public MouseState() { }
     }
 
     public static class InputManager
@@ -68,7 +63,7 @@ namespace MiniEngine
                 _ => false
             };
         }
-        
+
 
         public static bool IsMouseButtonDown(MouseButton mouseButton)
         {

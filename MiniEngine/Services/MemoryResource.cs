@@ -1,11 +1,10 @@
-﻿using System;
+﻿using MiniEngine.Utility;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
-using System.Threading.Tasks;
-using MiniEngine.Utility;
 using static SDL2.SDL;
 
 namespace MiniEngine
@@ -13,6 +12,9 @@ namespace MiniEngine
     public class MemoryResource : IDisposable
     {
         private GCHandle _handle;
+        private readonly int _size = 0;
+
+        public int Size => Disposed ? 0 : _size;
         public IntPtr RwHandle { get; private set; }
         public bool Disposed { get; private set; }
 
@@ -20,6 +22,7 @@ namespace MiniEngine
         {
             _handle = GCHandle.Alloc(data, GCHandleType.Pinned);
             var dataPtr = _handle.AddrOfPinnedObject();
+            _size = data.Count;
             RwHandle = SDL_RWFromMem(dataPtr, data.Count);
         }
 
@@ -30,6 +33,21 @@ namespace MiniEngine
             _handle.Free();
             GC.SuppressFinalize(this);
             Disposed = true;
+        }
+
+        public string ReadAsText(Encoding? encoding = null)
+        {
+            if (_handle.Target is not IReadOnlyCollection<byte> data)
+                return "";
+            var encoder = encoding ?? Encoding.UTF8;
+            return encoder.GetString(data.ToArray());
+        }
+
+        public Stream CreateStream()
+        {
+            return _handle.Target is not IReadOnlyCollection<byte> data
+                ? Stream.Null
+                : new MemoryStream(data.ToArray());
         }
 
         public static MemoryResource FromStream(MemoryStream stream)

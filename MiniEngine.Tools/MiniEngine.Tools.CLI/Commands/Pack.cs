@@ -1,5 +1,5 @@
-﻿using System.Text;
-using MiniEngine.Tools.Compression;
+﻿using MiniEngine.Tools.Compression;
+using System.Text;
 
 namespace MiniEngine.Tools.CLI
 {
@@ -134,7 +134,7 @@ namespace MiniEngine.Tools.CLI
             Console.WriteLine(" OK");
             Console.WriteLine("Total: {0} file(s)", _files.Count);
             Console.WriteLine();
-            
+
             var fileStream = CreateOutputFile(outFile);
             Console.Write("Writing index...");
             WriteIndex(fileStream);

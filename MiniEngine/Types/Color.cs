@@ -1,8 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace MiniEngine
 {
@@ -54,17 +50,17 @@ namespace MiniEngine
             B = b;
             A = a;
         }
-        
+
         public static implicit operator Color((byte r, byte g, byte b) color)
         {
             return new Color(color.r, color.g, color.b);
         }
-        
+
         public static implicit operator Color((byte r, byte g, byte b, byte a) color)
         {
             return new Color(color.r, color.g, color.b, color.a);
         }
-        
+
         public static implicit operator Color(string hex)
         {
             throw new NotImplementedException();

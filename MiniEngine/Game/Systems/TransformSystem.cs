@@ -1,11 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
-using MiniEngine.Components;
-using MiniEngine.Utility;
+﻿using MiniEngine.Utility;
 
 namespace MiniEngine
 {
@@ -35,5 +28,10 @@ namespace MiniEngine
         //    //    transformComponent.TranslateY,
         //    //    DeltaTime);
         //}
+
+        protected override void Step(object? arg)
+        {
+
+        }
     }
 }

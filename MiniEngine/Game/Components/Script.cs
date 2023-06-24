@@ -1,8 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace MiniEngine.Components
 {
@@ -14,7 +10,7 @@ namespace MiniEngine.Components
         public Action<Script>? Update { get; set; }
         public Action<Script>? AfterUpdate { get; set; }
         public Action<Script>? BeforeDraw { get; set; }
-        public Action<Script>? AfterDraw { get; set; } 
+        public Action<Script>? AfterDraw { get; set; }
         public Action<Script>? Destroy { get; set; }
     }
 }

@@ -1,12 +1,13 @@
-﻿using System;
+﻿using MiniEngine.Utility;
+using System;
 using System.Collections.Generic;
 using System.Linq;
-using MiniEngine.Utility;
 
 namespace MiniEngine
 {
     public abstract class Entity
     {
+        public Scene? ParentScene { get; internal set; }
         private readonly List<Component> _components = new();
         private readonly Guid _guid = Guid.NewGuid();
         public string Id => $"{GetType()}#{_guid}";
@@ -27,7 +28,7 @@ namespace MiniEngine
                 LoggingService.Error("Requires: {0}.",
                     string.Join(';', requiredComponents.Select(type => type.Name)));
                 LoggingService.Error("Has: {0}.",
-                    _components.Any() ? 
+                    _components.Any() ?
                         string.Join(';', _components.Select(hasComponent => hasComponent.GetType().Name))
                         : "<empty>");
                 return;
@@ -51,9 +52,12 @@ namespace MiniEngine
         }
 
         public T? GetComponent<T>() where T : Component
+            => (T?)GetComponent(typeof(T));
+
+        public Component? GetComponent(Type componentType)
         {
-            var component = _components.FirstOrDefault(c => c is T);
-            return (T?)component;
+            var component = _components.FirstOrDefault(c => c.GetType() == componentType);
+            return component;
         }
 
         public bool HasComponent<T>()

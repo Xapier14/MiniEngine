@@ -42,8 +42,7 @@ A full-fledged cross-platform 2D Game Engine.
   - Implement Basic Components and Systems
     - ~Add Transform and TransformSystem~
     - ~Add Motion and MotionSystem~
-    - Add Sprite and SpriteSystem
-    - Add Input and InputSystem
+    - ~Add Sprite and DrawSystem~
   - Implement Complex Components and Systems
     - Add PhysicsBehavior and PhysicsSystem
     - ~Add Script and ScriptSystem~

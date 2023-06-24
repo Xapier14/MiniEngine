@@ -1,20 +1,14 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Numerics;
-using System.Text;
-using System.Threading.Tasks;
-using MiniEngine.Components;
+﻿using MiniEngine.Components;
 using MiniEngine.Utility;
-
+using System;
 using static SDL2.SDL;
 
 namespace MiniEngine
 {
     [HandlesComponent<Sprite>]
-    public class SpriteSystem : System
+    public class DrawSystem : System
     {
-        public SpriteSystem()
+        public DrawSystem()
         {
             LoggingService.Debug("Sprite system initialized");
         }
@@ -40,6 +34,11 @@ namespace MiniEngine
             _ = Vector2.Zero.Equals(size)
                 ? SDL_RenderCopyF(Graphics.RendererPtr.Value, texture, IntPtr.Zero, IntPtr.Zero)
                 : SDL_RenderCopyF(Graphics.RendererPtr.Value, texture, IntPtr.Zero, ref rect);
+        }
+
+        protected override void Step(object? arg)
+        {
+
         }
     }
 }

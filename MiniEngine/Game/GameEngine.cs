@@ -1,11 +1,9 @@
-﻿using System;
+﻿using MiniEngine.Utility;
+using MiniEngine.Utility.Logging;
+using SDL2;
+using System;
 using System.Collections.Generic;
 using System.Linq;
-using MiniEngine.Components;
-using MiniEngine.Utility;
-using MiniEngine.Utility.Logging;
-
-using SDL2;
 using static SDL2.SDL;
 using static SDL2.SDL_image;
 
@@ -109,7 +107,7 @@ namespace MiniEngine
                 LoggingService.Fatal(IMG_GetError());
                 return true;
             }
-            
+
             LoggingService.Info("Initialized SDL2.");
             return false;
         }
@@ -199,7 +197,7 @@ namespace MiniEngine
             IsRunning = true;
 
             WindowManager.CreateWindow();
-            
+
             while (IsRunning)
             {
                 Graphics.RenderClear();

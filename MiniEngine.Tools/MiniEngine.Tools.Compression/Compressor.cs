@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO.Compression;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.IO.Compression;
 
 namespace MiniEngine.Tools.Compression
 {
@@ -16,12 +11,14 @@ namespace MiniEngine.Tools.Compression
         }
 
         public static void DecompressTo(
-            Stream source, uint sourceSeek, uint sourceLength,
-            Stream destination, uint destinationSeek = 0)
+            Stream source, long sourceSeek, uint sourceLength,
+            Stream destination, long destinationSeek = 0)
         {
-            source.Seek(sourceSeek, SeekOrigin.Current);
-            destination.Seek(destinationSeek, SeekOrigin.Current);
-            using var decompressor = new GZipStream(source, CompressionMode.Decompress);
+            if (sourceSeek != 0)
+                source.Seek(sourceSeek, SeekOrigin.Current);
+            if (destinationSeek != 0)
+                destination.Seek(destinationSeek, SeekOrigin.Current);
+            using var decompressor = new GZipStream(source, CompressionMode.Decompress, true);
             CopyStream(decompressor, destination, (int)sourceLength);
         }
 
@@ -29,7 +26,7 @@ namespace MiniEngine.Tools.Compression
         {
             var buffer = new byte[32768];
             int read;
-            while (bytes > 0 && 
+            while (bytes > 0 &&
                    (read = input.Read(buffer, 0, Math.Min(buffer.Length, bytes))) > 0)
             {
                 output.Write(buffer, 0, read);

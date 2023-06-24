@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using MiniEngine.Components;
+﻿using MiniEngine.Components;
 using MiniEngine.Utility;
 
 namespace MiniEngine
@@ -19,6 +14,11 @@ namespace MiniEngine
         {
             var entity = physicsComponent.Owner!;
             var collider = entity.GetComponent<Collider>();
+        }
+
+        protected override void Step(object? arg)
+        {
+
         }
     }
 }

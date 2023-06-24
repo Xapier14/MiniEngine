@@ -1,11 +1,5 @@
 ﻿using MiniEngine.Components;
 using MiniEngine.Utility;
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace MiniEngine
 {
@@ -14,7 +8,7 @@ namespace MiniEngine
     {
         public ScriptSystem()
         {
-            LoggingService.Debug("Script system initialized.");    
+            LoggingService.Debug("Script system initialized.");
         }
 
         public void HandleComponent(Script scriptComponent, object type)
@@ -47,6 +41,11 @@ namespace MiniEngine
                 default:
                     return;
             }
+        }
+
+        protected override void Step(object? arg)
+        {
+
         }
     }
 }

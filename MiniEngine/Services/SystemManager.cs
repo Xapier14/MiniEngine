@@ -1,9 +1,9 @@
-﻿using System;
+﻿using MiniEngine.Collections;
+using MiniEngine.Utility;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using MiniEngine.Utility;
-using MiniEngine.Collections;
 
 namespace MiniEngine
 {
@@ -28,8 +28,8 @@ namespace MiniEngine
                 RegisterAfter<PhysicsSystem>(typeof(MotionSystem));
                 RegisterAfter<MotionSystem>(typeof(TransformSystem));
                 RegisterAfter<TransformSystem>(typeof(ScriptSystem), ScriptEvent.BeforeDraw);
-                RegisterAfter<ScriptSystem>(typeof(SpriteSystem));
-                RegisterAfter<SpriteSystem>(ScriptEvent.BeforeDraw, typeof(ScriptSystem), ScriptEvent.AfterDraw);
+                RegisterAfter<ScriptSystem>(typeof(DrawSystem));
+                RegisterAfter<DrawSystem>(ScriptEvent.BeforeDraw, typeof(ScriptSystem), ScriptEvent.AfterDraw);
                 LoggingService.Debug("All default ECS system OK.");
             }
             catch (Exception ex)
@@ -54,7 +54,7 @@ namespace MiniEngine
 
         internal static T? Get<T>(object? data = null) where T : System => (T?)_systemList.FindSystemBySystemType<T>(data)?.Item1;
 
-        public static void Register(Type systemType) => RegisterBefore<SpriteSystem>(systemType);
+        public static void Register(Type systemType) => RegisterBefore<DrawSystem>(systemType);
 
         private static void UpdateSystemAssociation(Type systemType)
         {
@@ -171,6 +171,14 @@ namespace MiniEngine
             if (!_components.TryGetValue(typeof(T), out var list))
                 return;
             list.Add(component);
+        }
+
+        public static void RemoveEntity(Entity entity)
+        {
+            foreach (var component in entity.GetComponents())
+            {
+                RemoveComponent(component);
+            }
         }
 
         public static void RemoveComponent(Component component)

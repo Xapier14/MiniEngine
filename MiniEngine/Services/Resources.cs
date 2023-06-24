@@ -1,13 +1,10 @@
-﻿using System;
+﻿using MiniEngine.Tools.Compression;
+using MiniEngine.Utility;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
-using System.Text;
-using System.Threading.Tasks;
-using MiniEngine.Tools.Compression;
-using MiniEngine.Utility;
-
 using static SDL2.SDL;
 using static SDL2.SDL_image;
 
@@ -15,10 +12,9 @@ namespace MiniEngine
 {
     public static class Resources
     {
-        private class Resource : IDisposable
+        private sealed class Resource : IDisposable
         {
-            public MemoryResource MemoryResource { get; set; }
-            public int AccessCount { get; private set; } = 1;
+            public MemoryResource MemoryResource { get; }
 
             public Resource(MemoryResource memoryResource)
             {
@@ -29,11 +25,8 @@ namespace MiniEngine
             {
                 MemoryResource.Dispose();
             }
-
-            public void IncrementAccessCount()
-                => AccessCount++;
         }
-        
+
         private static readonly Dictionary<MemoryResource, IntPtr> _textureCache = new();
         private static readonly Dictionary<string, Resource> _resourceCache = new();
         private static FileStream? _packStream;
@@ -75,17 +68,15 @@ namespace MiniEngine
                 path = path[1..];
 
             if (_resourceCache.TryGetValue(path, out var resource))
-            {
-                resource.IncrementAccessCount();
                 return resource.MemoryResource;
-            }
 
             var offset = _offsets.FirstOrDefault(offset => offset?.RelativePath.Replace('\\', '/') == path, null);
             if (offset == null)
                 return null;
 
             using MemoryStream stream = new();
-            Compression.DecompressTo(_packStream, offset.Offset, offset.UncompressedSize, stream);
+            _packStream.Seek(offset.Offset, SeekOrigin.Begin);
+            Compression.DecompressTo(_packStream, 0, offset.UncompressedSize, stream);
             var memoryResource = new MemoryResource(stream.ToArray());
             resource = new Resource(memoryResource);
             _resourceCache.Add(path, resource);
