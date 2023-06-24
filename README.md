@@ -73,7 +73,7 @@ MiniEngine supports the use of a packed asset file that acts as a read-only virt
     - Line
     - Curved Line
   - Add Sprite Draw Functions
-    - Draw
+    - ~Draw~
     - Draw Spliced
 - Create Documentation
 - Create Example Projects
