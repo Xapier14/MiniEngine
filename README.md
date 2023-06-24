@@ -23,6 +23,14 @@ A full-fledged cross-platform 2D Game Engine.
    GameEngine.Run();
    ```
 
+## Using game assets
+MiniEngine supports the use of a packed asset file that acts as a read-only virtual file system.
+1. Build and install the `MiniEngine.Tools.CLI` project and install as a dotnet tool.
+1. Create a `.indexfile` file in your project directory. Files and folders specified in this file are set to be packed by the CLI tool.
+1. Run `metool pack` on the project directory. The tool will produce a `assets.mea` file that contains your game assets.
+1. Place and include this file on your project's output directory.
+1. Reference a file by calling `Resources.GetResource(string path)`. You may also opt for implicit conversion via strings when calling functions that uses `MemoryResource`.
+
 ## Progress
 ### Current State
 > Runnable with basic functionality included.
