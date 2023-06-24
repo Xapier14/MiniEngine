@@ -94,7 +94,24 @@ namespace MiniEngine
 
             DrawPixel(windowVector, color);
         }
-        
+
+        public static void DrawTexture(MemoryResource? textureResource, Vector2F position, Size size)
+        {
+            if (RendererNullSoftCheck("DrawTexture"))
+                return;
+
+            var rect = new SDL_FRect
+            {
+                x = position.X,
+                y = position.Y,
+                w = size.Width,
+                h = size.Height
+            };
+            var texture = GetTexture(textureResource);
+            _ = Vector2.Zero.Equals(size)
+                ? SDL_RenderCopyF(RendererPtr!.Value, texture, IntPtr.Zero, IntPtr.Zero)
+                : SDL_RenderCopyF(RendererPtr!.Value, texture, IntPtr.Zero, ref rect);
+        }
 
         internal static IntPtr GetTexture(MemoryResource? textureResource)
         {
