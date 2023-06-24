@@ -12,25 +12,10 @@ namespace MiniEngine
 {
     public static class Resources
     {
-        private sealed class Resource : IDisposable
-        {
-            public MemoryResource MemoryResource { get; }
-
-            public Resource(MemoryResource memoryResource)
-            {
-                MemoryResource = memoryResource;
-            }
-
-            public void Dispose()
-            {
-                MemoryResource.Dispose();
-            }
-        }
-
         private static readonly Dictionary<MemoryResource, IntPtr> _textureCache = new();
-        private static readonly Dictionary<string, Resource> _resourceCache = new();
+        private static readonly Dictionary<string, MemoryResource> _resourceCache = new();
+        private static readonly Dictionary<string, FileOffset> _offsets = new();
         private static FileStream? _packStream;
-        private static IEnumerable<FileOffset> _offsets = Array.Empty<FileOffset>();
         private static IntPtr? _missingTexture;
 
         public static void UsePack(string path)
@@ -41,13 +26,18 @@ namespace MiniEngine
                 return;
             }
             ClosePack();
-            _offsets = PackProber.Probe(path);
+            var offsets = PackProber.Probe(path);
+            foreach (var offset in offsets)
+            {
+                var relativePath = offset.RelativePath.Replace('\\', '/');
+                _offsets.Add(relativePath, offset);
+            }
             _packStream = File.OpenRead(path);
         }
 
         public static void ClosePack()
         {
-            _offsets = Array.Empty<FileOffset>();
+            _offsets.Clear();
             foreach (var (_, resource) in _resourceCache)
             {
                 resource.Dispose();
@@ -68,20 +58,18 @@ namespace MiniEngine
                 path = path[1..];
 
             if (_resourceCache.TryGetValue(path, out var resource))
-                return resource.MemoryResource;
+                return resource;
 
-            var offset = _offsets.FirstOrDefault(offset => offset?.RelativePath.Replace('\\', '/') == path, null);
-            if (offset == null)
+            if (!_offsets.TryGetValue(path, out var offset))
                 return null;
 
             using MemoryStream stream = new();
             _packStream.Seek(offset.Offset, SeekOrigin.Begin);
             Compression.DecompressTo(_packStream, 0, offset.UncompressedSize, stream);
             var memoryResource = new MemoryResource(stream.ToArray());
-            resource = new Resource(memoryResource);
-            _resourceCache.Add(path, resource);
+            _resourceCache.Add(path, memoryResource);
 
-            return resource?.MemoryResource;
+            return memoryResource;
         }
 
         internal static IntPtr GetTexture(MemoryResource? textureResource)
