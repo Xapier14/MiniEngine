@@ -128,7 +128,7 @@ namespace MiniEngine
 
         public static void RequestHalt()
         {
-            if (_requestedHalt)
+            if (_requestedHalt && !IsRunning)
                 return;
             _requestedHalt = true;
             LoggingService.Debug("Requested GameEngine halt.");
