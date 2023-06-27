@@ -79,5 +79,10 @@ namespace MiniEngine.Utility.Logging
             WriteLine(TRACE_COLOR, dateTime, message, "TRACE");
             WriteLine(TRACE_COLOR, "Exception:\n{0}", exception);
         }
+
+        public void OnUnhandledException(DateTime dateTime, Exception exception)
+        {
+            Trace(dateTime, "Unhandled exception occurred!", exception);
+        }
     }
 }

@@ -58,5 +58,13 @@ namespace MiniEngine.Utility
             var now = DateTime.Now;
             _loggers.ForEach(logger => logger.Trace(now, string.Format(message, args), exception));
         }
+
+        public static void OnUnhandledException(object sender, UnhandledExceptionEventArgs args)
+        {
+            var now = DateTime.Now;
+            _loggers.ForEach(logger => logger.OnUnhandledException(now, (Exception)args.ExceptionObject));
+            if (args.IsTerminating)
+                Fatal("Runtime is terminating...");
+        }
     }
 }

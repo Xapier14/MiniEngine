@@ -66,6 +66,7 @@ namespace MiniEngine
             LoggingService.Debug("{0} external initializer delegate(s) queued.", _externalInitializers.Count);
             var externalInitializersResult = _externalInitializers.Any(initializer => initializer());
             _isInitialized = true;
+            AppDomain.CurrentDomain.UnhandledException += LoggingService.OnUnhandledException;
             return externalInitializersResult;
         }
 

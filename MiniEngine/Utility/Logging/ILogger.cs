@@ -12,5 +12,7 @@ namespace MiniEngine.Utility.Logging
 
         public void Debug(DateTime dateTime, string message);
         public void Trace(DateTime dateTime, string message, Exception exception);
+
+        public void OnUnhandledException(DateTime dateTime, Exception exception);
     }
 }
