@@ -1,6 +1,4 @@
-﻿using static SDL2.SDL;
-
-namespace MiniEngine
+﻿namespace MiniEngine
 {
     public enum MouseButton : byte
     {
@@ -100,15 +98,15 @@ namespace MiniEngine
 
         private static void UpdateMouseState()
         {
-            CopyPreviousMouseState();
-            var buttonBitMask = SDL_GetMouseState(out var mouseX, out var mouseY);
-            _mouseState.X = mouseX;
-            _mouseState.Y = mouseY;
-            _mouseState.MouseButton1 = MaskCheck(SDL_BUTTON_LMASK, buttonBitMask);
-            _mouseState.MouseButton2 = MaskCheck(SDL_BUTTON_RMASK, buttonBitMask);
-            _mouseState.MouseButton3 = MaskCheck(SDL_BUTTON_MMASK, buttonBitMask);
-            _mouseState.MouseButton4 = MaskCheck(SDL_BUTTON_X1MASK, buttonBitMask);
-            _mouseState.MouseButton5 = MaskCheck(SDL_BUTTON_X2MASK, buttonBitMask);
+            //CopyPreviousMouseState();
+            //var buttonBitMask = SDL_GetMouseState(out var mouseX, out var mouseY);
+            //_mouseState.X = mouseX;
+            //_mouseState.Y = mouseY;
+            //_mouseState.MouseButton1 = MaskCheck(SDL_BUTTON_LMASK, buttonBitMask);
+            //_mouseState.MouseButton2 = MaskCheck(SDL_BUTTON_RMASK, buttonBitMask);
+            //_mouseState.MouseButton3 = MaskCheck(SDL_BUTTON_MMASK, buttonBitMask);
+            //_mouseState.MouseButton4 = MaskCheck(SDL_BUTTON_X1MASK, buttonBitMask);
+            //_mouseState.MouseButton5 = MaskCheck(SDL_BUTTON_X2MASK, buttonBitMask);
         }
     }
 }

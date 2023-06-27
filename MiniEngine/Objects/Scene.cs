@@ -18,7 +18,7 @@ namespace MiniEngine
             var entity = Factory.TryCreateEntity<T>(args);
             if (entity == null)
             {
-                GameEngine.FatalExit(100);
+                //GameEngine.FatalExit(100);
                 return default(T)!;
             }
             AddEntity(entity);

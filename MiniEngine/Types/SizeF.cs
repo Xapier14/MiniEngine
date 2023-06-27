@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Silk.NET.Maths;
+using System;
 
 namespace MiniEngine;
 
@@ -46,5 +47,15 @@ public struct SizeF : IEquatable<SizeF>, IEquatable<Size>
     public static implicit operator SizeF(Vector2F vector)
     {
         return new SizeF(vector.X, vector.Y);
+    }
+
+    public static implicit operator Vector2D<float>(SizeF size)
+    {
+        return new Vector2D<float>(size.Width, size.Height);
+    }
+
+    public static implicit operator Vector2D<double>(SizeF size)
+    {
+        return new Vector2D<double>(size.Width, size.Height);
     }
 }

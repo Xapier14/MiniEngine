@@ -6,6 +6,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Silk.NET" Version="2.17.1" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\MiniEngine.Tools\MiniEngine.Tools.Compression\MiniEngine.Tools.Compression.csproj" />
   </ItemGroup>
 

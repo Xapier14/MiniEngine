@@ -1,11 +1,10 @@
 ﻿using MiniEngine.Utility;
 using MiniEngine.Utility.Logging;
-using SDL2;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using static SDL2.SDL;
-using static SDL2.SDL_image;
+using System.Threading;
+using Silk.NET.Windowing;
 
 namespace MiniEngine
 {
@@ -16,7 +15,10 @@ namespace MiniEngine
         private static bool _canAddInitializers = true;
         private static bool _canAddReleasers = true;
         private static bool _requestedHalt = false;
+        private static bool _stopThreads = false;
         private static EngineSetup _setup = EngineSetup.Default;
+        private static IWindow? _window;
+        private static Thread _updateThread, _renderThread;
         private static readonly List<Func<bool>> _initializers = new();
         private static readonly List<Func<bool>> _releasers = new();
         private static readonly List<Func<bool>> _externalInitializers = new();
@@ -29,17 +31,16 @@ namespace MiniEngine
         {
             LoggingService.Use(new ConsoleLogger());
 
-            DllMap.RegisterDllMap();
-
             _initializers.AddRange(new Func<bool>[]
             {
-                InitializeSDL,
+                Graphics.Initialize,
                 SystemManager.InitializeWithDefaultSystems,
                 InitializeGameAssets
             });
 
             _releasers.AddRange(new Func<bool>[]
             {
+                ReleaseThreads,
                 ReleaseGameAssets
             });
         }
@@ -91,27 +92,6 @@ namespace MiniEngine
             return externalReleasersResult;
         }
 
-        private static bool InitializeSDL()
-        {
-            if (SDL_Init(SDL_INIT_EVERYTHING) != 0)
-            {
-                LoggingService.Fatal("Error initializing SDL2.");
-                LoggingService.Fatal(SDL_GetError());
-                return true;
-            }
-
-            var imgFlags = IMG_InitFlags.IMG_INIT_PNG | IMG_InitFlags.IMG_INIT_JPG;
-            if ((IMG_InitFlags)IMG_Init(imgFlags) != imgFlags)
-            {
-                LoggingService.Fatal("Error initializing SDL_image.");
-                LoggingService.Fatal(IMG_GetError());
-                return true;
-            }
-
-            LoggingService.Info("Initialized SDL2.");
-            return false;
-        }
-
         private static bool InitializeGameAssets()
         {
             Resources.UsePack(Setup.AssetsFile);
@@ -121,6 +101,12 @@ namespace MiniEngine
         private static bool ReleaseGameAssets()
         {
             Resources.ClosePack();
+            return false;
+        }
+
+        private static bool ReleaseThreads()
+        {
+            _stopThreads = true;
             return false;
         }
 
@@ -186,34 +172,86 @@ namespace MiniEngine
             _externalReleasers.Add(releaserDelegate);
         }
 
-        public static bool Run()
+        public static void Run()
+        {
+            var windowOptions = WindowOptions.Default;
+            windowOptions.Size = _setup.WindowSize!.Value;
+            windowOptions.Title = _setup.InitialWindowTitle ?? "MiniEngine Game";
+            windowOptions.FramesPerSecond = 0;
+            windowOptions.VSync = false;
+            windowOptions.ShouldSwapAutomatically = true;
+            _window = Window.Create(windowOptions);
+            _window.Update += WindowOnUpdate;
+            _window.Render += WindowOnRender;
+            _window.Load += WindowOnLoad;
+            _window.Closing += WindowOnClosing;
+            //_updateThread = new Thread(() =>
+            //{
+            //    while (!_stopThreads)
+            //    {
+            //        if (!_window.IsInitialized)
+            //            continue;
+            //        _window.DoUpdate();
+            //    }
+            //});
+            _renderThread = new Thread(() =>
+            {
+                _window.Initialize();
+                while (!_stopThreads)
+                {
+                    _window.DoEvents();
+                    if (!_window.IsClosing)
+                        _window.DoRender();
+                }
+            });
+            Graphics.SetWindow(_window);
+            //_window.Initialize();
+            //_updateThread.Start();
+            _renderThread.Start();
+            IsRunning = true;
+
+            while (IsRunning)
+            {
+                if (!_window.IsInitialized)
+                    continue;
+                _window.DoUpdate();
+            }
+            GracefulExit();
+        }
+
+        private static void WindowOnClosing()
+        {
+            RequestHalt();
+        }
+
+        private static void WindowOnLoad()
         {
             _canAddInitializers = false;
             if (Initialize())
             {
                 LoggingService.Fatal("GameEngine could not be initialized.");
-                return true;
+                FatalExit(1);
             }
             IsRunning = true;
+        }
 
-            WindowManager.CreateWindow();
+        private static void WindowOnRender(double obj)
+        {
+            Graphics.Clear();
+        }
 
-            while (IsRunning)
+        private static void WindowOnUpdate(double obj)
+        {
+            if (_requestedHalt)
             {
-                Graphics.RenderClear();
-                WindowManager.PumpEvents();
-                InputManager.UpdateState();
-                SystemManager.ProcessSystems();
-                Graphics.RenderPresent();
+                if (!_window!.IsClosing)
+                {
+                    _window?.Close();
+                    _window?.Reset();
+                }
 
-                if (!_requestedHalt)
-                    continue;
                 IsRunning = false;
-                LoggingService.Debug("GameEngine halted.");
             }
-
-            GracefulExit();
-            return false;
         }
     }
 }

@@ -5,7 +5,6 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
-using static SDL2.SDL;
 
 namespace MiniEngine
 {
@@ -23,12 +22,12 @@ namespace MiniEngine
             _handle = GCHandle.Alloc(data, GCHandleType.Pinned);
             var dataPtr = _handle.AddrOfPinnedObject();
             _size = data.Count;
-            RwHandle = SDL_RWFromMem(dataPtr, data.Count);
+            //RwHandle = SDL_RWFromMem(dataPtr, data.Count);
         }
 
         public void Dispose()
         {
-            SDL_RWclose(RwHandle);
+            //SDL_RWclose(RwHandle);
             RwHandle = IntPtr.Zero;
             _handle.Free();
             GC.SuppressFinalize(this);

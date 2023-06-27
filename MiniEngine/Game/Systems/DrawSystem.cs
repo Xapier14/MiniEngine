@@ -19,7 +19,7 @@ namespace MiniEngine
             var position = transformComponent.Translate + spriteComponent.Offset;
             var size = spriteComponent.Size;
 
-            Graphics.DrawTexture(spriteComponent.SpriteResource, position, size);
+            //Graphics.DrawTexture(spriteComponent.SpriteResource, position, size);
         }
 
         protected override void Step(object? arg)

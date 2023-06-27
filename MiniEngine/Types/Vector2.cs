@@ -1,5 +1,6 @@
 ﻿using MiniEngine.Utility;
 using System;
+using Silk.NET.Maths;
 
 namespace MiniEngine;
 
@@ -81,6 +82,11 @@ public struct Vector2 : IEquatable<Vector2>, IEquatable<Vector2F>, IEquatable<(i
     public static implicit operator Vector2(Size size)
     {
         return new Vector2(size.Width, size.Height);
+    }
+
+    public static implicit operator Vector2D<int>(Vector2 vector2)
+    {
+        return new Vector2D<int>(vector2.X, vector2.Y);
     }
 
     public static bool operator ==(Vector2 left, Vector2 right)
