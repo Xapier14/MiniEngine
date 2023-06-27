@@ -18,7 +18,7 @@ namespace MiniEngine
         private static bool _stopThreads = false;
         private static EngineSetup _setup = EngineSetup.Default;
         private static IWindow? _window;
-        private static Thread _updateThread, _renderThread;
+        private static Thread? _renderThread;
         private static readonly List<Func<bool>> _initializers = new();
         private static readonly List<Func<bool>> _releasers = new();
         private static readonly List<Func<bool>> _externalInitializers = new();
@@ -186,15 +186,6 @@ namespace MiniEngine
             _window.Render += WindowOnRender;
             _window.Load += WindowOnLoad;
             _window.Closing += WindowOnClosing;
-            //_updateThread = new Thread(() =>
-            //{
-            //    while (!_stopThreads)
-            //    {
-            //        if (!_window.IsInitialized)
-            //            continue;
-            //        _window.DoUpdate();
-            //    }
-            //});
             _renderThread = new Thread(() =>
             {
                 _window.Initialize();
@@ -206,16 +197,24 @@ namespace MiniEngine
                 }
             });
             Graphics.SetWindow(_window);
-            //_window.Initialize();
-            //_updateThread.Start();
             _renderThread.Start();
             IsRunning = true;
 
             while (IsRunning)
             {
-                if (!_window.IsInitialized)
+                if (!_window!.IsInitialized)
                     continue;
                 _window.DoUpdate();
+                if (_requestedHalt)
+                {
+                    if (!_window!.IsClosing)
+                    {
+                        _window?.Close();
+                        _window?.Reset();
+                    }
+
+                    IsRunning = false;
+                }
             }
             GracefulExit();
         }
@@ -239,20 +238,12 @@ namespace MiniEngine
         private static void WindowOnRender(double obj)
         {
             Graphics.Clear();
+            LoggingService.Debug("Render");
         }
 
         private static void WindowOnUpdate(double obj)
         {
-            if (_requestedHalt)
-            {
-                if (!_window!.IsClosing)
-                {
-                    _window?.Close();
-                    _window?.Reset();
-                }
-
-                IsRunning = false;
-            }
+            LoggingService.Debug("Update");
         }
     }
 }
