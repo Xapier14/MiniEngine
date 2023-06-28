@@ -18,7 +18,6 @@ namespace MiniEngine
         private static bool _stopThreads = false;
         private static EngineSetup _setup = EngineSetup.Default;
         private static IWindow? _window;
-        private static Thread? _renderThread;
         private static readonly List<Func<bool>> _initializers = new();
         private static readonly List<Func<bool>> _releasers = new();
         private static readonly List<Func<bool>> _externalInitializers = new();
@@ -186,7 +185,7 @@ namespace MiniEngine
             _window.Render += WindowOnRender;
             _window.Load += WindowOnLoad;
             _window.Closing += WindowOnClosing;
-            _renderThread = new Thread(() =>
+            var renderThread = new Thread(() =>
             {
                 _window.Initialize();
                 while (!_stopThreads)
@@ -197,7 +196,7 @@ namespace MiniEngine
                 }
             });
             Graphics.SetWindow(_window);
-            _renderThread.Start();
+            renderThread.Start();
             IsRunning = true;
 
             while (IsRunning)
@@ -205,16 +204,15 @@ namespace MiniEngine
                 if (!_window!.IsInitialized)
                     continue;
                 _window.DoUpdate();
-                if (_requestedHalt)
+                if (!_requestedHalt)
+                    continue;
+                if (!_window!.IsClosing)
                 {
-                    if (!_window!.IsClosing)
-                    {
-                        _window?.Close();
-                        _window?.Reset();
-                    }
-
-                    IsRunning = false;
+                    _window?.Close();
+                    _window?.Reset();
                 }
+
+                IsRunning = false;
             }
             GracefulExit();
         }
