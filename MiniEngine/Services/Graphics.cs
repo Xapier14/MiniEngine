@@ -17,6 +17,7 @@ namespace MiniEngine
         private static GL? _gl;
         private static int? _threadId;
         public static readonly object _lock = new();
+        public static GL GL => _gl;
 
         internal static void SetWindow(IWindow window)
             => _window = window;
@@ -27,6 +28,16 @@ namespace MiniEngine
                 return true;
             _gl = _window.CreateOpenGL();
             _threadId = Environment.CurrentManagedThreadId;
+            var glMajor = _gl.GetInteger(GLEnum.MajorVersion);
+            var glMinor = _gl.GetInteger(GLEnum.MinorVersion);
+            var glShading = _gl.GetStringS(GLEnum.ShadingLanguageVersion) ?? "n/a";
+            var glVendor = _gl.GetStringS(GLEnum.Vendor) ?? "n/a";
+            var glRenderer = _gl.GetStringS(GLEnum.Renderer) ?? "n/a";
+            LoggingService.Info("Using OpenGL {0}.{1}.", glMajor, glMinor);
+            LoggingService.Info("Driver Info:");
+            LoggingService.Info("   Vendor: {0}", glVendor);
+            LoggingService.Info("   Renderer: {0}", glRenderer);
+            LoggingService.Info("   Shading Language Version: {0}", glShading);
             return false;
         }
 

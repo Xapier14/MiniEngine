@@ -38,7 +38,7 @@ namespace MiniEngine
         {
             if (_handle.Target is not IReadOnlyCollection<byte> data)
                 return "";
-            var encoder = encoding ?? Encoding.UTF8;
+            var encoder = encoding ?? new UTF8Encoding(false);
             return encoder.GetString(data.ToArray());
         }
 

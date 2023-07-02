@@ -2,8 +2,10 @@
 using MiniEngine.Utility.Logging;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading;
+using Silk.NET.OpenGL;
 using Silk.NET.Windowing;
 
 namespace MiniEngine
@@ -54,6 +56,7 @@ namespace MiniEngine
                 LoggingService.Fatal("An internal initializer returned an error!");
                 return true;
             }
+
             LoggingService.Debug("Finished core initializers.", _externalInitializers.Count);
 
             if (!_externalInitializers.Any())
@@ -94,7 +97,8 @@ namespace MiniEngine
 
         private static bool InitializeGameAssets()
         {
-            Resources.UsePack(Setup.AssetsFile);
+            if (Setup.AssetsFile != null && File.Exists(Setup.AssetsFile))
+                Resources.UsePack(Setup.AssetsFile);
             return false;
         }
 
@@ -140,6 +144,7 @@ namespace MiniEngine
                 LoggingService.Error("Attempted to apply another setup configuration while running!");
                 return;
             }
+
             if (!_canAddInitializers)
             {
                 LoggingService.Error("Attempted to apply another setup configuration while initializing!");
@@ -159,6 +164,7 @@ namespace MiniEngine
                 LoggingService.Error("Cannot add initializer delegate. Engine is already initializing!");
                 return;
             }
+
             _externalInitializers.Add(initializerDelegate);
         }
 
@@ -169,6 +175,7 @@ namespace MiniEngine
                 LoggingService.Error("Cannot add releaser delegate. Engine is already releasing!");
                 return;
             }
+
             _externalReleasers.Add(releaserDelegate);
         }
 
@@ -195,9 +202,11 @@ namespace MiniEngine
                         _window.DoRender();
                 }
             });
+            renderThread.Name = "MiniEngine Render Thread";
             Graphics.SetWindow(_window);
             renderThread.Start();
             IsRunning = true;
+            Thread.CurrentThread.Name = "MiniEngine Main Thread";
 
             while (IsRunning)
             {
@@ -214,6 +223,7 @@ namespace MiniEngine
 
                 IsRunning = false;
             }
+            
             GracefulExit();
         }
 
@@ -222,7 +232,15 @@ namespace MiniEngine
             RequestHalt();
         }
 
-        private static void WindowOnLoad()
+        private static float[] _verts = {
+            -0.5f, -0.5f, 0.0f,
+            0.5f, -0.5f, 0.0f,
+            0.0f,  0.5f, 0.0f
+        };
+
+        private static uint _vao;
+
+        private static unsafe void WindowOnLoad()
         {
             _canAddInitializers = false;
             if (Initialize())
@@ -230,18 +248,78 @@ namespace MiniEngine
                 LoggingService.Fatal("GameEngine could not be initialized.");
                 FatalExit(1);
             }
+
+            Graphics.GL.GenVertexArrays(1, out _vao);
+            Graphics.GL.BindVertexArray(_vao);
+
+            Graphics.GL.GenBuffers(1, out uint vbo);
+            Graphics.GL.BindBuffer(BufferTargetARB.ArrayBuffer, vbo);
+            fixed (void* v = &_verts[0])
+            {
+                Graphics.GL.BufferData(BufferTargetARB.ArrayBuffer, (nuint)(_verts.Length * sizeof(float)), v, BufferUsageARB.StaticDraw);
+            }
+            
+            var vertexSource = Resources.GetResource("shaders/test.vert")!.ReadAsText();
+            var fragmentSource = Resources.GetResource("shaders/test.frag")!.ReadAsText();
+            var vertexShader = Graphics.GL.CreateShader(ShaderType.VertexShader);
+            Graphics.GL.ShaderSource(vertexShader, vertexSource);
+            var infoLog = Graphics.GL.GetShaderInfoLog(vertexShader);
+            if (!string.IsNullOrWhiteSpace(infoLog))
+            {
+                LoggingService.Fatal("Error compiling vertex shader.");
+                LoggingService.Fatal(infoLog);
+                FatalExit(1);
+            }
+            LoggingService.Info("Compiled vertex shader.");
+
+            var fragmentShader = Graphics.GL.CreateShader(ShaderType.FragmentShader);
+            Graphics.GL.ShaderSource(fragmentShader, fragmentSource);
+            infoLog = Graphics.GL.GetShaderInfoLog(fragmentShader);
+            if (!string.IsNullOrWhiteSpace(infoLog))
+            {
+                LoggingService.Fatal("Error compiling fragment shader.");
+                LoggingService.Fatal(infoLog);
+                FatalExit(2);
+            }
+            LoggingService.Info("Compiled fragment shader.");
+
+            LoggingService.Info("Linking...");
+            var shaderProgram = Graphics.GL.CreateProgram();
+            Graphics.GL.AttachShader(shaderProgram, vertexShader);
+            Graphics.GL.AttachShader(shaderProgram, fragmentShader);
+            Graphics.GL.LinkProgram(shaderProgram);
+            infoLog = Graphics.GL.GetProgramInfoLog(shaderProgram);
+            if (!string.IsNullOrWhiteSpace(infoLog))
+            {
+                LoggingService.Fatal("Error linking.");
+                LoggingService.Fatal(infoLog);
+                FatalExit(3);
+            }
+            LoggingService.Info("Linked shader program.");
+            
+            Graphics.GL.DeleteShader(vertexShader);
+            Graphics.GL.DeleteShader(fragmentShader);
+
+            Graphics.GL.VertexAttribPointer(0, 3, VertexAttribPointerType.Float, false, 3u * sizeof(float), (void*)0);
+            Graphics.GL.EnableVertexAttribArray(0);
+            Graphics.GL.UseProgram(shaderProgram);
+            _verts[0] = 0.0f;
+
             IsRunning = true;
         }
 
         private static void WindowOnRender(double obj)
         {
             Graphics.Clear();
-            LoggingService.Debug("Render");
+            Graphics.GL.BindVertexArray(_vao);
+            Graphics.GL.DrawArrays(GLEnum.Triangles, 0, 3);
         }
 
         private static void WindowOnUpdate(double obj)
         {
-            LoggingService.Debug("Update");
+            if (!_isInitialized)
+                return;
+            SystemManager.ProcessSystems();
         }
     }
 }

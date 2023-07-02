@@ -7,5 +7,5 @@ public interface IReadOnlyEngineSetup
     public float? FpsLimit { get; set; }
     public bool? DisableGamePad { get; set; }
     public string? InitialWindowTitle { get; set; }
-    public string AssetsFile { get; set; }
+    public string? AssetsFile { get; set; }
 }
