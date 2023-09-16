@@ -8,10 +8,10 @@
 
         public IReadOnlyDictionary<string, FileInfo> Files => _files;
 
-        private IndexFileParser(string path, string dirRoot = "")
+        private IndexFileParser(string path)
         {
             _stream = File.OpenText(path);
-            _dirRoot = dirRoot;
+            _dirRoot = new FileInfo(path).DirectoryName ?? string.Empty;
         }
 
         public static IndexFileParser Open(string path)
@@ -22,12 +22,11 @@
             var parsedFiles = new Dictionary<string, FileInfo>();
             while (_stream.ReadLine() is { } line)
             {
-                var fullPath = Path.Join(_dirRoot, line);
-                if (IsFile(fullPath))
-                    parsedFiles.TryAdd(fullPath.ToLower(), new FileInfo(fullPath));
+                if (IsFile(Path.Join(_dirRoot, line)))
+                    parsedFiles.TryAdd(line.ToLower(), new FileInfo(Path.Join(_dirRoot, line)));
 
-                if (IsFolder(fullPath))
-                    _ = GetFilesRecursively(fullPath)
+                if (IsFolder(Path.Join(_dirRoot, line)))
+                    _ = GetFilesRecursively(line, _dirRoot)
                         .All(file =>
                         {
                             var (path, fileInfo) = file;
@@ -36,8 +35,12 @@
                         });
             }
             _files.Clear();
-            foreach (var kp in parsedFiles)
-                _files.TryAdd(kp.Key, kp.Value);
+            foreach (var (relativePath, file) in parsedFiles)
+            {
+                if (relativePath == "/.indexfile")
+                    continue;
+                _files.TryAdd(relativePath, file);
+            }
         }
 
         public void Close()
@@ -49,11 +52,11 @@
         private static bool IsFile(string path)
             => File.Exists(path);
 
-        private static IEnumerable<(string, FileInfo)> GetFilesRecursively(string path)
+        private static IEnumerable<(string, FileInfo)> GetFilesRecursively(string path, string dirRoot = "")
         {
-            if (!IsFolder(path))
+            if (!IsFolder(Path.Join(dirRoot, path)))
                 return Array.Empty<(string, FileInfo)>();
-            var dirInfo = new DirectoryInfo(path);
+            var dirInfo = new DirectoryInfo(Path.Join(dirRoot, path));
             if (dirInfo.Name.Contains('.'))
                 throw new InvalidDataException("Directory name cannot contain '.'.");
             var files = dirInfo.GetFiles();
@@ -61,7 +64,7 @@
             var dirs = dirInfo.GetDirectories();
             return dirs.Aggregate(ret,
                 (current, dir)
-                    => current.Concat(GetFilesRecursively(Path.Join(path, dir.Name)))
+                    => current.Concat(GetFilesRecursively(Path.Join(path, dir.Name), dirRoot))
                         .ToList());
         }
     }
