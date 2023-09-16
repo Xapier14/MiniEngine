@@ -2,8 +2,8 @@
   "profiles": {
     "MiniEngine.Tools.CLI": {
       "commandName": "Project",
-      "commandLineArgs": "pack",
-      "workingDirectory": "E:\\metool-test"
+      "commandLineArgs": "pack assets",
+      "workingDirectory": "D:\\metool-test"
     }
   }
 }
