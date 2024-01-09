@@ -1,8 +1,11 @@
 ﻿using System;
+using System.Globalization;
+using System.Text;
+using System.Text.RegularExpressions;
 
 namespace MiniEngine
 {
-    public struct Color
+    public struct Color : IParsable<Color>
     {
         public static Color Black { get; } = new(0);
         public static Color White { get; } = new(255);
@@ -26,6 +29,14 @@ namespace MiniEngine
         public byte G { get; set; }
         public byte B { get; set; }
         public byte A { get; set; }
+
+        public Color()
+        {
+            R = 255;
+            G = 255;
+            B = 255;
+            A = 255;
+        }
 
         public Color(byte gs)
         {
@@ -62,8 +73,85 @@ namespace MiniEngine
         }
 
         public static implicit operator Color(string hex)
+            => Parse(hex);
+
+        public static Color Parse(string s, IFormatProvider? provider = null)
         {
-            throw new NotImplementedException();
+            TryParse(s, provider, out var color);
+            return color;
         }
+
+        public static bool TryParse(string? s, IFormatProvider? provider, out Color result)
+        {
+            if (s == null)
+                throw new ArgumentNullException(nameof(s), "String to parse must not be null.");
+            if (ParseHex(s, out result))
+                return true;
+            return false;
+        }
+
+        private static byte FromHex(string str)
+            => (byte)int.Parse(str, NumberStyles.HexNumber);
+
+        private static string Repeat(string str, int repetition)
+        {
+            StringBuilder builder = new();
+            for (var i = 0; i < repetition; ++i)
+                builder.Append(str);
+            return builder.ToString();
+        }
+
+        private static bool ParseHex(string hexColor, out Color color)
+        {
+            color = new Color();
+            // #RGB
+            var pattern1 = Regex.Match(hexColor,
+                @"^#([\da-f])([\da-f])([\da-f])$", RegexOptions.IgnoreCase);
+            if (pattern1.Success)
+            {
+                color.R = FromHex(Repeat(pattern1.Groups[1].Value, 2));
+                color.G = FromHex(Repeat(pattern1.Groups[2].Value, 2));
+                color.B = FromHex(Repeat(pattern1.Groups[3].Value, 2));
+                return true;
+            }
+
+            // #RGBA
+            var pattern2 = Regex.Match(hexColor,
+                @"^#([\da-f])([\da-f])([\da-f])([\da-f])$", RegexOptions.IgnoreCase);
+            if (pattern2.Success)
+            {
+                color.R = FromHex(Repeat(pattern2.Groups[1].Value, 2));
+                color.G = FromHex(Repeat(pattern2.Groups[2].Value, 2));
+                color.B = FromHex(Repeat(pattern2.Groups[3].Value, 2));
+                color.A = FromHex(Repeat(pattern2.Groups[4].Value, 2));
+                return true;
+            }
+
+            // #RRGGBB
+            var pattern3 = Regex.Match(hexColor,
+                @"^#([\da-f]{2})([\da-f]{2})([\da-f]{2})$", RegexOptions.IgnoreCase);
+            if (pattern3.Success)
+            {
+                color.R = FromHex(pattern3.Groups[1].Value[..2]);
+                color.G = FromHex(pattern3.Groups[2].Value[..2]);
+                color.B = FromHex(pattern3.Groups[3].Value[..2]);
+                return true;
+            }
+
+            // #RRGGBBAA
+            var pattern4 = Regex.Match(hexColor,
+                @"^#([\da-f]{2})([\da-f]{2})([\da-f]{2})([\da-f]{2})$", RegexOptions.IgnoreCase);
+            if (pattern4.Success)
+            {
+                color.R = FromHex(pattern4.Groups[1].Value[..2]);
+                color.G = FromHex(pattern4.Groups[2].Value[..2]);
+                color.B = FromHex(pattern4.Groups[3].Value[..2]);
+                color.A = FromHex(pattern4.Groups[4].Value[..2]);
+                return true;
+            }
+
+            return false;
+        }
+
     }
 }

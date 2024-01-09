@@ -41,6 +41,29 @@ namespace MiniEngine.Utility
                 ? $"{type.Namespace}.{type.Name}"
                 : type.Name;
             typeName = RemoveNullableType(typeName);
+            var isParsableGeneric = type.GetInterfaces().Any(i => 
+                i.IsOfGenericType(typeof(IParsable<>)));
+            if (isParsableGeneric)
+            {
+                try
+                {
+                    var tryParse = type.GetMethod("Parse");
+                    if (tryParse != null)
+                    {
+                        var parsed = tryParse.Invoke(null, new object?[] { value, null });
+                        if (parsed != null)
+                        {
+                            LoggingService.Debug("[TypeResolver] Parsed via IParsable<>. Type: {0}, Value: {1}",
+                                type.Name, parsed);
+                            return parsed;
+                        }
+                    }
+                }
+                catch
+                {
+                    // ignored
+                }
+            }
             switch (typeName)
             {
                 case "System.Single":

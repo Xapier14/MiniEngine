@@ -1,9 +1,10 @@
 ﻿using MiniEngine.Utility;
 using System;
+using System.Text.RegularExpressions;
 
 namespace MiniEngine;
 
-public struct Vector2F : IEquatable<Vector2F>, IEquatable<Vector2>, IEquatable<(int X, int Y)>, IEquatable<(float X, float Y)>
+public struct Vector2F : IEquatable<Vector2F>, IEquatable<Vector2>, IEquatable<(int X, int Y)>, IEquatable<(float X, float Y)>, IParsable<Vector2F>
 {
     public static Vector2F Zero => new(0, 0);
 
@@ -141,5 +142,37 @@ public struct Vector2F : IEquatable<Vector2F>, IEquatable<Vector2>, IEquatable<(
     public static Vector2F operator *(Vector2F left, float right)
     {
         return new Vector2F(left.X * right, left.Y * right);
+    }
+
+    public static Vector2F Parse(string s, IFormatProvider? provider = null)
+    {
+        var parsedSuccessfully = TryParse(s, provider, out var result);
+        if (!parsedSuccessfully)
+        {
+            throw new InvalidOperationException("Input was not in a valid format.");
+        }
+        return result;
+    }
+
+    public static bool TryParse(string? s, IFormatProvider? provider, out Vector2F result)
+    {
+        if (FromTuple(s, out result))
+            return true;
+        return false;
+    }
+
+    private static bool FromTuple(string tupleString, out Vector2F size)
+    {
+        size = new Vector2F();
+        var pattern = Regex.Match(tupleString.Trim('(', ')'),
+            @"^(\d+(?:\.\d+)?),\s?(\d+(?:\.\d+)?)$", RegexOptions.IgnoreCase);
+        if (pattern.Success)
+        {
+            size.X = float.Parse(pattern.Groups[1].Value);
+            size.Y = float.Parse(pattern.Groups[2].Value);
+            return true;
+        }
+
+        return false;
     }
 }

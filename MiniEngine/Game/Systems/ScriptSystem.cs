@@ -1,5 +1,6 @@
 ﻿using MiniEngine.Components;
 using MiniEngine.Utility;
+using NotImplementedException = System.NotImplementedException;
 
 namespace MiniEngine
 {
@@ -11,15 +12,22 @@ namespace MiniEngine
             LoggingService.Debug("Script system initialized.");
         }
 
+        public static void OnComponentRegister(Script scriptComponent)
+        {
+            scriptComponent.Create?.Invoke(scriptComponent);
+        }
+
+        public static void OnComponentRemove(Script scriptComponent)
+        {
+            scriptComponent.Destroy?.Invoke(scriptComponent);
+        }
+
         public void HandleComponent(Script scriptComponent, object type)
         {
             var eventType = (ScriptEvent)type;
             scriptComponent.Delta = DeltaTime;
             switch (eventType)
             {
-                case ScriptEvent.Create:
-                    scriptComponent.Create?.Invoke(scriptComponent);
-                    break;
                 case ScriptEvent.BeforeUpdate:
                     scriptComponent.BeforeUpdate?.Invoke(scriptComponent);
                     break;
@@ -34,9 +42,6 @@ namespace MiniEngine
                     break;
                 case ScriptEvent.AfterDraw:
                     scriptComponent.AfterDraw?.Invoke(scriptComponent);
-                    break;
-                case ScriptEvent.Destroy:
-                    scriptComponent.Destroy?.Invoke(scriptComponent);
                     break;
                 default:
                     return;

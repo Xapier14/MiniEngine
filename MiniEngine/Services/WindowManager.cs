@@ -9,7 +9,7 @@ namespace MiniEngine
     {
         public static GameWindow? GameWindow { get; private set; }
 
-        public static void CreateWindow()
+        public static void CreateWindow(string initialWindowTitle)
         {
             if (!GameEngine.IsRunning)
             {
@@ -45,6 +45,7 @@ namespace MiniEngine
                 throw exception;
             }
 
+            SDL_SetWindowTitle(windowPtr, initialWindowTitle);
             GameWindow = new GameWindow(windowSize, windowPtr, rendererPtr);
             LoggingService.Info("Created window {0}.", windowSize);
         }

@@ -2,6 +2,7 @@
 using MiniEngine.Utility;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Reflection;
 
@@ -13,6 +14,11 @@ namespace MiniEngine
         private static readonly Dictionary<Type, List<Component>> _components = new();
         private static readonly Dictionary<Type, List<Type>> _systems = new();
         private static readonly Dictionary<Type, System> _systemInstanceCache = new();
+        private static readonly Dictionary<(Type system, string eventType), MethodInfo> _systemEventsCache = new ();
+        private static readonly Dictionary<Type, List<Component>> _componentDiff = new();
+        private static Type? _currentlyExecutingSystem;
+
+        internal static IReadOnlyDictionary<Type, List<Component>> ComponentDiff => _componentDiff;
 
         internal static bool InitializeWithDefaultSystems()
         {
@@ -66,6 +72,17 @@ namespace MiniEngine
                 var componentType = handlesAttribute.ComponentType;
                 AssociateComponentWithSystem(componentType, systemType);
             }
+        }
+
+        private static void RaiseSystemEvent(Type systemType, string eventName, params object?[] args)
+        {
+            if (!_systemEventsCache.TryGetValue((systemType, eventName), out var eventMethod))
+            {
+                eventMethod = systemType.GetMethod(eventName, BindingFlags.Public | BindingFlags.Static);
+                if (eventMethod != null)
+                    _systemEventsCache.Add((systemType, eventName), eventMethod);
+            }
+            eventMethod?.Invoke(null, args);
         }
 
         public static void RegisterBefore<T>(Type systemType, object? argument = null) where T : System
@@ -162,7 +179,28 @@ namespace MiniEngine
             {
                 if (!_components.TryGetValue(systemType, out var list))
                     return;
+
+                if (_currentlyExecutingSystem == systemType)
+                {
+                    if (!_componentDiff.TryGetValue(_currentlyExecutingSystem, out var diffList))
+                    {
+                        diffList = new List<Component>();
+                        _componentDiff.Add(_currentlyExecutingSystem, diffList);
+                    }
+                    // add if not included in diff list
+                    if (!diffList.Contains(component))
+                    {
+                        diffList.Add(component);
+                        RaiseSystemEvent(systemType, "OnComponentRegister", component);
+                    }
+
+                    return;
+                }
+                if (list.Contains(component))
+                    return;
+
                 list.Add(component);
+                RaiseSystemEvent(systemType, "OnComponentRegister", component);
             });
         }
 
@@ -170,7 +208,28 @@ namespace MiniEngine
         {
             if (!_components.TryGetValue(typeof(T), out var list))
                 return;
+
+            if (_currentlyExecutingSystem == typeof(T))
+            {
+                if (!_componentDiff.TryGetValue(_currentlyExecutingSystem, out var diffList))
+                {
+                    diffList = new List<Component>();
+                    _componentDiff.Add(_currentlyExecutingSystem, diffList);
+                }
+                // add if not included in diff list
+                if (!diffList.Contains(component))
+                {
+                    diffList.Add(component);
+                    RaiseSystemEvent(typeof(T), "OnComponentRegister", component);
+                }
+
+                return;
+            }
+            if (list.Contains(component))
+                return;
+
             list.Add(component);
+            RaiseSystemEvent(typeof(T), "OnComponentRegister", component);
         }
 
         public static void RemoveEntity(Entity entity)
@@ -189,6 +248,28 @@ namespace MiniEngine
             {
                 if (!_components.TryGetValue(systemType, out var list))
                     return;
+
+                if (_currentlyExecutingSystem == systemType)
+                {
+                    if (!_componentDiff.TryGetValue(_currentlyExecutingSystem, out var diffList))
+                    {
+                        diffList = new List<Component>();
+                        _componentDiff.Add(_currentlyExecutingSystem, diffList);
+                    }
+
+                    // add if not included in diff list
+                    if (!diffList.Contains(component))
+                    {
+                        RaiseSystemEvent(systemType, "OnComponentRemove", component);
+                        diffList.Add(component);
+                    }
+
+                    return;
+                }
+                if (!list.Contains(component))
+                    return;
+
+                RaiseSystemEvent(systemType, "OnComponentRemove", component);
                 list.Remove(component);
             });
         }
@@ -197,6 +278,27 @@ namespace MiniEngine
         {
             if (!_components.TryGetValue(typeof(T), out var list))
                 return;
+
+            if (_currentlyExecutingSystem == typeof(T))
+            {
+                if (!_componentDiff.TryGetValue(_currentlyExecutingSystem, out var diffList))
+                {
+                    diffList = new List<Component>();
+                    _componentDiff.Add(_currentlyExecutingSystem, diffList);
+                }
+                // add if not included in diff list
+                if (!diffList.Contains(component))
+                {
+                    RaiseSystemEvent(typeof(T), "OnComponentRemove", component);
+                    diffList.Add(component);
+                }
+
+                return;
+            }
+            if (!list.Contains(component))
+                return;
+
+            RaiseSystemEvent(typeof(T), "OnComponentRemove", component);
             list.Remove(component);
         }
 
@@ -214,7 +316,9 @@ namespace MiniEngine
         {
             foreach (var (_, list) in _components)
             {
-                list.Clear();
+                var snapshot = list.ToArray();
+                foreach (var component in snapshot)
+                    RemoveComponent(component);
             }
         }
 
@@ -233,7 +337,26 @@ namespace MiniEngine
                 }
                 if (!_components.TryGetValue(system.Value.GetType(), out var componentList))
                     continue;
+                _currentlyExecutingSystem = system.Value.GetType();
                 system.Value?.HandleComponents(componentList, system.Argument);
+                _currentlyExecutingSystem = null;
+                // process diff list
+                foreach (var (systemType, diffList) in ComponentDiff)
+                {
+                    var realComponentList = _components[systemType];
+                    foreach (var diff in diffList)
+                    {
+                        if (realComponentList.Contains(diff))
+                        {
+                            realComponentList.Remove(diff);
+                        }
+                        else
+                        {
+                            realComponentList.Add(diff);
+                        }
+                    }
+                }
+                _componentDiff.Clear();
             }
         }
     }

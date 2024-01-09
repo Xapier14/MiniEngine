@@ -1,8 +1,10 @@
 ﻿using System;
+using System.Diagnostics.CodeAnalysis;
+using System.Text.RegularExpressions;
 
 namespace MiniEngine;
 
-public struct SizeF : IEquatable<SizeF>, IEquatable<Size>
+public struct SizeF : IEquatable<SizeF>, IEquatable<Size>, IParsable<SizeF>
 {
     public float Width { get; set; }
     public float Height { get; set; }
@@ -46,5 +48,54 @@ public struct SizeF : IEquatable<SizeF>, IEquatable<Size>
     public static implicit operator SizeF(Vector2F vector)
     {
         return new SizeF(vector.X, vector.Y);
+    }
+
+    public static SizeF Parse(string s, IFormatProvider? provider = null)
+    {
+        var parsedSuccessfully = TryParse(s, provider, out var result);
+        if (!parsedSuccessfully)
+        {
+            throw new InvalidOperationException("Input was not in a valid format.");
+        }
+        return result;
+    }
+
+    public static bool TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, out SizeF result)
+    {
+        if (FromCross(s, out result))
+            return true;
+        if (FromTuple(s, out result))
+            return true;
+        return false;
+    }
+
+    private static bool FromCross(string crossString, out SizeF size)
+    {
+        size = new SizeF();
+        var pattern = Regex.Match(crossString,
+            @"^(\d+(?:\.\d+)?)x(\d+(?:\.\d+)?)$", RegexOptions.IgnoreCase);
+        if (pattern.Success)
+        {
+            size.Width = float.Parse(pattern.Groups[1].Value);
+            size.Height = float.Parse(pattern.Groups[2].Value);
+            return true;
+        }
+
+        return false;
+    }
+
+    private static bool FromTuple(string tupleString, out SizeF size)
+    {
+        size = new SizeF();
+        var pattern = Regex.Match(tupleString.Trim('(', ')'),
+            @"^(\d+(?:\.\d+)?),\s?(\d+(?:\.\d+)?)$", RegexOptions.IgnoreCase);
+        if (pattern.Success)
+        {
+            size.Width = float.Parse(pattern.Groups[1].Value);
+            size.Height = float.Parse(pattern.Groups[2].Value);
+            return true;
+        }
+
+        return false;
     }
 }

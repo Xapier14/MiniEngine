@@ -1,5 +1,6 @@
 ﻿using MiniEngine.Utility;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -13,6 +14,8 @@ namespace MiniEngine
         public double DeltaTime { get; private set; }
 
         protected abstract void Step(object? arg);
+
+        internal static readonly ConcurrentBag<Component> ComponentDiff = new();
 
         internal void PreCacheHandlers()
         {
@@ -47,8 +50,14 @@ namespace MiniEngine
         internal void HandleComponents(IEnumerable<Component> components, object? arg = null)
         {
             Step(arg);
-            foreach (var component in components)
+            var componentsSnapshot = components.ToArray();
+            foreach (var component in componentsSnapshot)
             {
+                // skip if component is in component diff (flagged for removal)
+                if (SystemManager.ComponentDiff.TryGetValue(GetType(), out var componentDiff))
+                    if (componentDiff.Contains(component))
+                        continue;
+
                 if (!_methodCache.TryGetValue((component.GetType(), arg != null), out var methodInfo))
                 {
                     var systemType = GetType();

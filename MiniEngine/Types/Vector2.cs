@@ -1,9 +1,10 @@
 ﻿using MiniEngine.Utility;
 using System;
+using System.Text.RegularExpressions;
 
 namespace MiniEngine;
 
-public struct Vector2 : IEquatable<Vector2>, IEquatable<Vector2F>, IEquatable<(int X, int Y)>, IEquatable<(float X, float Y)>
+public struct Vector2 : IEquatable<Vector2>, IEquatable<Vector2F>, IEquatable<(int X, int Y)>, IEquatable<(float X, float Y)>, IParsable<Vector2>
 {
     public static Vector2 Zero => new(0, 0);
 
@@ -111,5 +112,37 @@ public struct Vector2 : IEquatable<Vector2>, IEquatable<Vector2F>, IEquatable<(i
     public static Vector2 operator /(Vector2 left, Vector2 right)
     {
         return new Vector2(left.X / right.X, left.Y / right.Y);
+    }
+
+    public static Vector2 Parse(string s, IFormatProvider? provider = null)
+    {
+        var parsedSuccessfully = TryParse(s, provider, out var result);
+        if (!parsedSuccessfully)
+        {
+            throw new InvalidOperationException("Input was not in a valid format.");
+        }
+        return result;
+    }
+
+    public static bool TryParse(string? s, IFormatProvider? provider, out Vector2 result)
+    {
+        if (FromTuple(s, out result))
+            return true;
+        return false;
+    }
+
+    private static bool FromTuple(string tupleString, out Vector2 size)
+    {
+        size = new Vector2();
+        var pattern = Regex.Match(tupleString.Trim('(', ')'),
+            @"^(\d+),\s?(\d+)$", RegexOptions.IgnoreCase);
+        if (pattern.Success)
+        {
+            size.X = int.Parse(pattern.Groups[1].Value);
+            size.Y = int.Parse(pattern.Groups[2].Value);
+            return true;
+        }
+
+        return false;
     }
 }

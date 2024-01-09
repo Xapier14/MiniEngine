@@ -1,6 +1,8 @@
-﻿using MiniEngine.Utility;
+﻿using System;
+using MiniEngine.Utility;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace MiniEngine
 {
@@ -27,6 +29,11 @@ namespace MiniEngine
 
         public void AddEntity(Entity entity)
         {
+            if (entity.Destroyed)
+            {
+                LoggingService.Error("Cannot add destroyed entity {0} to scene.", entity.Id);
+                return;
+            }
             if (ContainsEntity(entity))
             {
                 LoggingService.Error("Entity {0} already exists in scene.", entity.Id);
@@ -60,6 +67,12 @@ namespace MiniEngine
             entity.ParentScene = null;
             _entities.Remove(entity);
         }
+
+        public IEnumerable<Entity> GetEntity<T>() where T : Entity
+            => GetEntity(typeof(T));
+
+        public IEnumerable<Entity> GetEntity(Type entityType)
+            => _entities.Where(e => e.GetType() == entityType);
 
         public IEnumerator<Entity> GetEnumerator()
         {

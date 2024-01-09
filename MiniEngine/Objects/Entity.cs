@@ -9,8 +9,11 @@ namespace MiniEngine
     {
         public Scene? ParentScene { get; internal set; }
         private readonly List<Component> _components = new();
+        private bool _destroyed;
         private readonly Guid _guid = Guid.NewGuid();
+
         public string Id => $"{GetType()}#{_guid}";
+        public bool Destroyed => _destroyed;
 
         internal IReadOnlyList<Component> GetComponents()
             => _components;
@@ -58,6 +61,13 @@ namespace MiniEngine
         {
             var component = _components.FirstOrDefault(c => c.GetType() == componentType);
             return component;
+        }
+
+        public void Destroy()
+        {
+            ParentScene?.RemoveEntity(this);
+            _components.Clear();
+            _destroyed = true;
         }
 
         public bool HasComponent<T>()

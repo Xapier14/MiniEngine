@@ -31,15 +31,16 @@ namespace MiniEngine
 
             DllMap.RegisterDllMap();
 
-            _initializers.AddRange(new Func<bool>[]
+            _initializers.AddRange(new []
             {
                 InitializeSDL,
                 SystemManager.InitializeWithDefaultSystems,
                 InitializeGameAssets
             });
 
-            _releasers.AddRange(new Func<bool>[]
+            _releasers.AddRange(new []
             {
+                ReleaseComponents,
                 ReleaseGameAssets
             });
         }
@@ -51,21 +52,32 @@ namespace MiniEngine
             var coreInitializersResult = _initializers.Any(initializer => initializer());
             if (coreInitializersResult)
             {
-                LoggingService.Fatal("An internal initializer returned an error!");
+                LoggingService.Fatal("A core initializer returned an error!");
                 return true;
             }
             LoggingService.Debug("Finished core initializers.", _externalInitializers.Count);
 
+            _isInitialized = true;
+            return false;
+        }
+
+        private static bool InitializeExternal()
+        {
             if (!_externalInitializers.Any())
             {
-                _isInitialized = true;
                 return false;
             }
 
             LoggingService.Debug("{0} external initializer delegate(s) queued.", _externalInitializers.Count);
             var externalInitializersResult = _externalInitializers.Any(initializer => initializer());
-            _isInitialized = true;
-            return externalInitializersResult;
+            if (externalInitializersResult)
+            {
+                LoggingService.Fatal("An external initializer returned an error!");
+                return true;
+            }
+            LoggingService.Debug("Finished external initializers.", _externalInitializers.Count);
+
+            return false;
         }
 
         private static bool Release()
@@ -120,7 +132,13 @@ namespace MiniEngine
 
         private static bool ReleaseGameAssets()
         {
-            Resources.ClosePack();
+            Resources.ClosePacks();
+            return false;
+        }
+
+        private static bool ReleaseComponents()
+        {
+            SystemManager.PurgeComponents();
             return false;
         }
 
@@ -196,7 +214,14 @@ namespace MiniEngine
             }
             IsRunning = true;
 
-            WindowManager.CreateWindow();
+            var initialWindowTitle = _setup.InitialWindowTitle ?? "MiniEngine Game Window";
+            WindowManager.CreateWindow(initialWindowTitle);
+
+            if (InitializeExternal())
+            {
+                LoggingService.Fatal("GameEngine could not be initialized.");
+                return true;
+            }
 
             while (IsRunning)
             {

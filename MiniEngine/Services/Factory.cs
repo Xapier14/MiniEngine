@@ -38,7 +38,7 @@ namespace MiniEngine
                 _entityDefaultConstructorCache.Add(entityType, entityCtr);
             }
 
-            var autoInjectTypes = ImmutableArray<Type>.Empty;
+            var autoInjectTypes = Array.Empty<Type>();
             Entity? result = null;
             foreach (var constructor in constructors)
             {
@@ -47,7 +47,7 @@ namespace MiniEngine
                     var autoInjectAttributes = constructor.GetCustomAttributes()
                         .Where(attribute => attribute.GetType().IsAssignableTo(typeof(IAutoInjectAttribute)));
                     autoInjectTypes = autoInjectAttributes.Cast<IAutoInjectAttribute>().Select(attribute => attribute.InjectType)
-                        .ToImmutableArray();
+                        .ToArray();
 
                     var injectAttributes = constructor.GetCustomAttributes()
                         .Where(attribute => attribute.GetType().IsAssignableTo(typeof(IInjectAttribute)));
