@@ -6,7 +6,7 @@ namespace MiniEngine.Tools.Compression
     {
         public static void CompressTo(Stream source, Stream destination)
         {
-            using var compressor = new GZipStream(destination, CompressionLevel.SmallestSize, true);
+            using var compressor = new GZipStream(destination, CompressionLevel.Optimal, true);
             source.CopyTo(compressor);
         }
 
