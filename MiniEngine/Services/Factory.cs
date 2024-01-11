@@ -67,7 +67,7 @@ namespace MiniEngine
                         }
 
                         var isValidInjectType = injectTypes.Contains(parameterType) ||
-                                                injectTypes.Any(type => type.IsAssignableFrom(parameterType));
+                                                injectTypes.Any(injectType => injectType.IsAssignableFrom(parameterType));
 
                         if (isValidInjectType && ctr != null)
                         {
@@ -195,6 +195,17 @@ namespace MiniEngine
                         var x = int.Parse(viewPosition.Attributes["X"]?.Value ?? "0");
                         var y = int.Parse(viewPosition.Attributes["Y"]?.Value ?? "0");
                         scene.ViewPosition.Set(x, y);
+                    }
+                    if (properties["ViewRotation"] is { } viewRotation)
+                    {
+                        var rotationString = viewRotation.Attributes.GetNamedItem("Value")?.Value ?? viewRotation.Value ?? "0.0";
+                        scene.ViewRotation = float.Parse(rotationString);
+                    }
+
+                    if (properties["BackgroundColor"] is { } backgroundColor)
+                    {
+                        var colorString = backgroundColor.Attributes.GetNamedItem("Value")?.Value ?? backgroundColor.Value ?? "0.0";
+                        scene.BackgroundColor = Color.Parse(colorString);
                     }
                     // add other properties
                 }

@@ -5,14 +5,14 @@ namespace MiniEngine.Utility.Logging
 {
     public class ConsoleLogger : ILogger
     {
-        private bool _debugging = false;
+        private bool _debugging;
         private const ConsoleColor
-            INFO_COLOR = ConsoleColor.Gray,
-            WARN_COLOR = ConsoleColor.Yellow,
-            ERROR_COLOR = ConsoleColor.DarkRed,
-            FATAL_COLOR = ConsoleColor.Red,
-            DEBUG_COLOR = ConsoleColor.Green,
-            TRACE_COLOR = ConsoleColor.Magenta;
+            InfoColor = ConsoleColor.Gray,
+            WarnColor = ConsoleColor.Yellow,
+            ErrorColor = ConsoleColor.DarkRed,
+            FatalColor = ConsoleColor.Red,
+            DebugColor = ConsoleColor.Green,
+            TraceColor = ConsoleColor.Magenta;
 
         public bool AlwaysShowDebug { get; set; } = false;
 
@@ -44,40 +44,40 @@ namespace MiniEngine.Utility.Logging
 
         public void Info(DateTime dateTime, string message)
         {
-            WriteLine(INFO_COLOR, dateTime, message, "INFO");
+            WriteLine(InfoColor, dateTime, message, "INFO");
         }
 
         public void Warn(DateTime dateTime, string message)
         {
-            WriteLine(WARN_COLOR, dateTime, message, "WARNING");
+            WriteLine(WarnColor, dateTime, message, "WARNING");
         }
 
         public void Error(DateTime dateTime, string message)
         {
-            WriteLine(ERROR_COLOR, dateTime, message, "ERROR");
+            WriteLine(ErrorColor, dateTime, message, "ERROR");
         }
 
         public void Fatal(DateTime dateTime, string message)
         {
-            WriteLine(FATAL_COLOR, dateTime, message, "FATAL");
+            WriteLine(FatalColor, dateTime, message, "FATAL");
         }
 
         public void Fatal(DateTime dateTime, string message, Exception exception)
         {
-            WriteLine(FATAL_COLOR, dateTime, message, "FATAL");
-            WriteLine(FATAL_COLOR, "Exception:\n{0}", exception);
+            WriteLine(FatalColor, dateTime, message, "FATAL");
+            WriteLine(FatalColor, "Exception:\n{0}", exception);
         }
 
         public void Debug(DateTime dateTime, string message)
         {
             if (_debugging || AlwaysShowDebug)
-                WriteLine(DEBUG_COLOR, dateTime, message, "DEBUG");
+                WriteLine(DebugColor, dateTime, message, "DEBUG");
         }
 
         public void Trace(DateTime dateTime, string message, Exception exception)
         {
-            WriteLine(TRACE_COLOR, dateTime, message, "TRACE");
-            WriteLine(TRACE_COLOR, "Exception:\n{0}", exception);
+            WriteLine(TraceColor, dateTime, message, "TRACE");
+            WriteLine(TraceColor, "Exception:\n{0}", exception);
         }
     }
 }

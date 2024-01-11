@@ -1,4 +1,6 @@
-﻿using MiniEngine.Utility;
+﻿using System;
+using System.Runtime.InteropServices;
+using MiniEngine.Utility;
 using MiniEngine.Windowing;
 
 using static SDL2.SDL;
@@ -28,14 +30,14 @@ namespace MiniEngine
 
             var setup = GameEngine.Setup;
             var windowSize = setup.WindowSize!.Value;
-            var result = SDL_CreateWindowAndRenderer(
+            var windowPtr = SDL_CreateWindow(initialWindowTitle, 
+                SDL_WINDOWPOS_UNDEFINED, 
+                SDL_WINDOWPOS_UNDEFINED, 
                 windowSize.Width,
                 windowSize.Height,
-                SDL_WindowFlags.SDL_WINDOW_ALLOW_HIGHDPI,
-                out var windowPtr,
-                out var rendererPtr);
+                SDL_WindowFlags.SDL_WINDOW_ALLOW_HIGHDPI);
 
-            if (result != 0)
+            if (windowPtr == IntPtr.Zero)
             {
                 var error = SDL_GetError();
                 var exception =
@@ -44,10 +46,27 @@ namespace MiniEngine
                 LoggingService.Fatal("SDL threw an error whilst creating window. Error: {0}", exception, error);
                 throw exception;
             }
+            LoggingService.Info("Created window {0}.", windowSize);
+
+            var rendererPtr = SDL_CreateRenderer(windowPtr, -1, SDL_RendererFlags.SDL_RENDERER_ACCELERATED);
+
+            if (rendererPtr == IntPtr.Zero)
+            {
+                var error = SDL_GetError();
+                var exception =
+                    new SDLErrorException(
+                        $"SDL threw an error whilst creating renderer.\n{error}");
+                LoggingService.Fatal("SDL threw an error whilst creating renderer. Error: {0}", exception, error);
+                throw exception;
+            }
+
+            _ = SDL_GetRendererInfo(rendererPtr, out var rendererInfo);
+            var rendererName = Marshal.PtrToStringUTF8(rendererInfo.name);
+            Size maxTextureSize = (rendererInfo.max_texture_width, rendererInfo.max_texture_height);
+            LoggingService.Info("Created renderer \"{0}\", max texture size: {1}.", rendererName ?? "n/a", maxTextureSize);
 
             SDL_SetWindowTitle(windowPtr, initialWindowTitle);
             GameWindow = new GameWindow(windowSize, windowPtr, rendererPtr);
-            LoggingService.Info("Created window {0}.", windowSize);
         }
 
         internal static void PumpEvents()

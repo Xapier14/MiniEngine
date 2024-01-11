@@ -2,7 +2,6 @@
 using MiniEngine.Utility;
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Linq;
 using System.Reflection;
 
@@ -32,11 +31,11 @@ namespace MiniEngine
                 RegisterAfter<ScriptSystem>(ScriptEvent.Update, typeof(ScriptSystem), ScriptEvent.AfterUpdate);
                 RegisterAfter<ScriptSystem>(typeof(PhysicsSystem));
                 RegisterAfter<PhysicsSystem>(typeof(MotionSystem));
-                RegisterAfter<MotionSystem>(typeof(TransformSystem));
-                RegisterAfter<TransformSystem>(typeof(ScriptSystem), ScriptEvent.BeforeDraw);
+                // RegisterAfter<MotionSystem>(typeof(TransformSystem));
+                RegisterAfter<MotionSystem>(typeof(ScriptSystem), ScriptEvent.BeforeDraw);
                 RegisterAfter<ScriptSystem>(typeof(DrawSystem));
                 RegisterAfter<DrawSystem>(ScriptEvent.BeforeDraw, typeof(ScriptSystem), ScriptEvent.AfterDraw);
-                LoggingService.Debug("All default ECS system OK.");
+                LoggingService.Debug("All default ECS OK.");
             }
             catch (Exception ex)
             {

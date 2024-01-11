@@ -126,6 +126,8 @@ public struct Vector2 : IEquatable<Vector2>, IEquatable<Vector2F>, IEquatable<(i
 
     public static bool TryParse(string? s, IFormatProvider? provider, out Vector2 result)
     {
+        if (s == null)
+            throw new ArgumentNullException(nameof(s));
         if (FromTuple(s, out result))
             return true;
         return false;

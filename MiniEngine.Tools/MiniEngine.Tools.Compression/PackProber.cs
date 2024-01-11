@@ -4,7 +4,7 @@ namespace MiniEngine.Tools.Compression
 {
     public class FileOffset
     {
-        public string RelativePath { get; init; }
+        public string RelativePath { get; init; } = string.Empty;
         public uint Offset { get; init; }
         public uint CompressedSize { get; internal set; }
         public uint UncompressedSize { get; init; }
@@ -13,9 +13,9 @@ namespace MiniEngine.Tools.Compression
 
     public static class PackProber
     {
-        private static readonly byte[] MAGIC_SIGNATURE =
+        private static readonly byte[] _magicSignature =
             Encoding.UTF8.GetBytes("MiniEngine Asset Pack Format").Append((byte)0).ToArray();
-        private static readonly int MAGIC_OFFSET = MAGIC_SIGNATURE.Length;
+        private static readonly int _magicOffset = _magicSignature.Length;
 
         public static IEnumerable<FileOffset> Probe(string path)
         {
@@ -24,7 +24,7 @@ namespace MiniEngine.Tools.Compression
             var files = new List<FileOffset>();
 
             var fileStream = File.OpenRead(path);
-            fileStream.Seek(MAGIC_OFFSET, SeekOrigin.Begin);
+            fileStream.Seek(_magicOffset, SeekOrigin.Begin);
             var countBuffer = new byte[4];
             _ = fileStream.Read(countBuffer, 0, 4);
             var fileCount = BitConverter.ToUInt32(countBuffer);

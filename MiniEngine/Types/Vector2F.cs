@@ -9,7 +9,7 @@ public struct Vector2F : IEquatable<Vector2F>, IEquatable<Vector2>, IEquatable<(
     public static Vector2F Zero => new(0, 0);
 
     public float Magnitude => MathF.Sqrt(MathF.Pow(X, 2f) + MathF.Pow(Y, 2f));
-    public float Angle => ConversionF.RadiansToDegrees(MathF.Atan(Y / X));
+    public float Angle => Magnitude > 0 ? ConversionF.RadiansToDegrees(MathF.Atan2(Y, X)) : 0;
 
     public float X { get; set; }
     public float Y { get; set; }
@@ -18,6 +18,12 @@ public struct Vector2F : IEquatable<Vector2F>, IEquatable<Vector2>, IEquatable<(
     {
         X = x;
         Y = y;
+    }
+
+    public Vector2F(double x, double y)
+    {
+        X = (float)x;
+        Y = (float)y;
     }
 
     public bool Equals(Vector2 other)
@@ -64,6 +70,13 @@ public struct Vector2F : IEquatable<Vector2F>, IEquatable<Vector2>, IEquatable<(
         return this;
     }
 
+    public Vector2F SetFrom(double degrees, double magnitude)
+    {
+        X = ConversionF.TestForZero(MathF.Cos(ConversionF.DegreesToRadians(degrees)) * magnitude);
+        Y = ConversionF.TestForZero(MathF.Sin(ConversionF.DegreesToRadians(degrees)) * magnitude);
+        return this;
+    }
+
     public static implicit operator Vector2F(Vector2 vector2)
     {
         return new Vector2F(vector2.X, vector2.Y);
@@ -99,7 +112,17 @@ public struct Vector2F : IEquatable<Vector2F>, IEquatable<Vector2>, IEquatable<(
         return new Vector2F().SetFrom(degrees, magnitude);
     }
 
+    public static Vector2F From(double degrees = 0.0, double magnitude = 1.0)
+    {
+        return new Vector2F().SetFrom(degrees, magnitude);
+    }
+
     public static implicit operator Vector2F((float X, float Y) vector2F)
+    {
+        return new Vector2F(vector2F.X, vector2F.Y);
+    }
+
+    public static implicit operator Vector2F((double X, double Y) vector2F)
     {
         return new Vector2F(vector2F.X, vector2F.Y);
     }
@@ -124,7 +147,7 @@ public struct Vector2F : IEquatable<Vector2F>, IEquatable<Vector2>, IEquatable<(
         return new Vector2F(left.X + right.X, left.Y + right.Y);
     }
 
-    public static Vector2F operator -(Vector2F left, Vector2 right)
+    public static Vector2F operator -(Vector2F left, Vector2F right)
     {
         return new Vector2F(left.X - right.X, left.Y - right.Y);
     }
@@ -156,6 +179,8 @@ public struct Vector2F : IEquatable<Vector2F>, IEquatable<Vector2>, IEquatable<(
 
     public static bool TryParse(string? s, IFormatProvider? provider, out Vector2F result)
     {
+        if (s == null)
+            throw new ArgumentNullException(nameof(s));
         if (FromTuple(s, out result))
             return true;
         return false;

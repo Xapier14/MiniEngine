@@ -1,6 +1,5 @@
 ﻿using MiniEngine.Components;
 using MiniEngine.Utility;
-using NotImplementedException = System.NotImplementedException;
 
 namespace MiniEngine
 {

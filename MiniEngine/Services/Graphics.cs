@@ -1,6 +1,7 @@
 ﻿using MiniEngine.Utility;
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using static SDL2.SDL;
 using static SDL2.SDL_image;
@@ -95,7 +96,7 @@ namespace MiniEngine
             DrawPixel(windowVector, color);
         }
 
-        public static void DrawTexture(MemoryResource? textureResource, Vector2F position, Size size)
+        public static void DrawTexture(MemoryResource? textureResource, Vector2F position, Size size, double angle = 0.0, Vector2F? rotationPoint = null)
         {
             if (RendererNullSoftCheck("DrawTexture"))
                 return;
@@ -107,10 +108,19 @@ namespace MiniEngine
                 w = size.Width,
                 h = size.Height
             };
+            var point = new SDL_FPoint()
+            {
+                x = rotationPoint?.X ?? size.Width / 2f,
+                y = rotationPoint?.Y ?? size.Height / 2f
+            };
             var texture = GetTexture(textureResource);
-            _ = Vector2.Zero.Equals(size)
-                ? SDL_RenderCopyF(RendererPtr!.Value, texture, IntPtr.Zero, IntPtr.Zero)
-                : SDL_RenderCopyF(RendererPtr!.Value, texture, IntPtr.Zero, ref rect);
+            unsafe
+            {
+                _ = Vector2.Zero.Equals(size)
+                    ? SDL_RenderCopyExF(RendererPtr!.Value, texture, IntPtr.Zero, IntPtr.Zero, angle, ref point,
+                        SDL_RendererFlip.SDL_FLIP_NONE)
+                    : SDL_RenderCopyExF(RendererPtr!.Value, texture, IntPtr.Zero, ref rect, angle, (IntPtr)Unsafe.AsPointer(ref point), SDL_RendererFlip.SDL_FLIP_NONE);
+            }
         }
 
         internal static IntPtr GetTexture(MemoryResource? textureResource)

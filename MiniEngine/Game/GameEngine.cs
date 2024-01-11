@@ -11,11 +11,11 @@ namespace MiniEngine
 {
     public static class GameEngine
     {
-        private static bool _isInitialized = false;
-        private static bool _isReleased = false;
+        private static bool _isInitialized;
+        private static bool _isReleased;
         private static bool _canAddInitializers = true;
         private static bool _canAddReleasers = true;
-        private static bool _requestedHalt = false;
+        private static bool _requestedHalt;
         private static EngineSetup _setup = EngineSetup.Default;
         private static readonly List<Func<bool>> _initializers = new();
         private static readonly List<Func<bool>> _releasers = new();
@@ -33,7 +33,6 @@ namespace MiniEngine
 
             _initializers.AddRange(new []
             {
-                InitializeSDL,
                 SystemManager.InitializeWithDefaultSystems,
                 InitializeGameAssets
             });
@@ -126,7 +125,8 @@ namespace MiniEngine
 
         private static bool InitializeGameAssets()
         {
-            Resources.UsePack(Setup.AssetsFile);
+            if (Setup.AssetsFile != null)
+                Resources.UsePack(Setup.AssetsFile);
             return false;
         }
 
@@ -207,17 +207,16 @@ namespace MiniEngine
         public static bool Run()
         {
             _canAddInitializers = false;
-            if (Initialize())
+            if (InitializeSDL())
             {
-                LoggingService.Fatal("GameEngine could not be initialized.");
+                LoggingService.Fatal("GameEngine could not be initialized (SDL initialization error).");
                 return true;
             }
             IsRunning = true;
 
             var initialWindowTitle = _setup.InitialWindowTitle ?? "MiniEngine Game Window";
             WindowManager.CreateWindow(initialWindowTitle);
-
-            if (InitializeExternal())
+            if (Initialize() || InitializeExternal())
             {
                 LoggingService.Fatal("GameEngine could not be initialized.");
                 return true;
@@ -225,11 +224,9 @@ namespace MiniEngine
 
             while (IsRunning)
             {
-                Graphics.RenderClear();
                 WindowManager.PumpEvents();
                 InputManager.UpdateState();
                 SystemManager.ProcessSystems();
-                Graphics.RenderPresent();
 
                 if (!_requestedHalt)
                     continue;

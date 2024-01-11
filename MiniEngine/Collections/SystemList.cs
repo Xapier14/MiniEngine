@@ -45,46 +45,46 @@ namespace MiniEngine.Collections
 
     public class SystemListEnumerator : IEnumerator<(System, object?)>
     {
-        protected SystemNode? _current;
-        protected SystemNode? _head;
+        protected SystemNode? Current;
+        protected SystemNode? Head;
         private bool _disposedValue;
 
         public SystemListEnumerator(SystemNode? head)
         {
-            _current = null;
-            _head = head;
+            Current = null;
+            Head = head;
         }
 
-        (System, object?) IEnumerator<(System, object?)>.Current => _current!;
+        (System, object?) IEnumerator<(System, object?)>.Current => Current!;
 
-        object IEnumerator.Current => _current!;
+        object IEnumerator.Current => Current!;
 
         bool IEnumerator.MoveNext()
         {
-            switch (_current)
+            switch (Current)
             {
                 case { Next: null }:
                     return false;
                 case null:
-                    _current = _head;
+                    Current = Head;
                     return true;
                 default:
-                    _current = _current!.Next!;
+                    Current = Current!.Next!;
                     return true;
             }
         }
 
         void IEnumerator.Reset()
         {
-            _current = _head;
+            Current = Head;
         }
 
         protected virtual void Dispose(bool disposing)
         {
             if (_disposedValue)
                 return;
-            _current = null;
-            _head = null;
+            Current = null;
+            Head = null;
             _disposedValue = true;
         }
 
@@ -182,7 +182,7 @@ namespace MiniEngine.Collections
         public SystemNode? FindFirstSystemNodeBySystemType<T>(object? data = null) where T : System
         {
             var type = typeof(T);
-            return this.FirstOrDefault<SystemNode>(system => system?.Value?.GetType() == type && (system.Argument == data || system.Argument == null));
+            return this.FirstOrDefault<SystemNode>(system => system.Value?.GetType() == type && (system.Argument == data || system.Argument == null));
         }
 
         public SystemNode? FindLastSystemNodeBySystemType<T>(object? data = null) where T : System

@@ -13,7 +13,8 @@ namespace MiniEngine
         private long? _lastTick;
         public double DeltaTime { get; private set; }
 
-        protected abstract void Step(object? arg);
+        protected virtual void Step(object? arg) { }
+        protected virtual void AfterStep(object? arg) { }
 
         internal static readonly ConcurrentBag<Component> ComponentDiff = new();
 
@@ -104,6 +105,7 @@ namespace MiniEngine
                         GetType().Name);
                 }
             }
+            AfterStep(arg);
         }
     }
 }

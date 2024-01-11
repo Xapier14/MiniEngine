@@ -3,6 +3,7 @@ using System.Linq;
 
 namespace MiniEngine
 {
+    // ReSharper disable once InconsistentNaming
     public static class IEnumerableExtensions
     {
         public static bool StartsWith(this IEnumerable<object> enumerable, IEnumerable<object> startsWith)

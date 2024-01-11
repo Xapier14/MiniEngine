@@ -16,7 +16,7 @@ namespace MiniEngine
             public IDictionary<string, FileOffset> Offsets => _offsets;
             public FileStream? PackStream { get; set; }
 
-            public MemoryResource? GetResource(string path)
+            public MemoryResource? GetInternalResource(string path)
             {
                 path = path.ToLower().Replace('\\', '/');
                 if (path.StartsWith("./"))
@@ -28,6 +28,9 @@ namespace MiniEngine
                     return resource;
 
                 if (!_offsets.TryGetValue(path, out var offset))
+                    return null;
+
+                if (PackStream == null)
                     return null;
 
                 using MemoryStream stream = new();
@@ -103,7 +106,7 @@ namespace MiniEngine
             foreach (var (_, absolutePath) in _packPaths)
             {
                 var pack = _packs[absolutePath];
-                var memoryResource = pack.GetResource(path);
+                var memoryResource = pack.GetInternalResource(path);
                 if (memoryResource != null)
                     return memoryResource;
             }

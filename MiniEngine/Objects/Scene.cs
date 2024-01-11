@@ -11,6 +11,8 @@ namespace MiniEngine
         private readonly List<Entity> _entities = new();
 
         public Vector2F ViewPosition = Vector2F.Zero;
+        public float ViewRotation = 0f;
+        public Color BackgroundColor = Color.Black;
 
         public bool ContainsEntity(Entity entity)
             => entity.ParentScene == this && _entities.Contains(entity);

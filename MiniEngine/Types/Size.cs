@@ -8,6 +8,7 @@ public struct Size : IEquatable<Size>, IEquatable<SizeF>, IParsable<Size>
 {
     public int Width { get; set; }
     public int Height { get; set; }
+    public static Size NoSize = new(-1, -1);
 
     public Size(int width, int height)
     {
@@ -52,6 +53,8 @@ public struct Size : IEquatable<Size>, IEquatable<SizeF>, IParsable<Size>
 
     public static bool TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, out Size result)
     {
+        if (s == null)
+            throw new ArgumentNullException(nameof(s));
         if (FromCross(s, out result))
             return true;
         if (FromTuple(s, out result))

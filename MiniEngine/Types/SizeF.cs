@@ -62,6 +62,8 @@ public struct SizeF : IEquatable<SizeF>, IEquatable<Size>, IParsable<SizeF>
 
     public static bool TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, out SizeF result)
     {
+        if (s == null)
+            throw new ArgumentNullException(nameof(s));
         if (FromCross(s, out result))
             return true;
         if (FromTuple(s, out result))
