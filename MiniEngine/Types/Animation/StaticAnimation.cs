@@ -11,15 +11,12 @@
             _sprite = sprite;
         }
 
-        public StaticAnimation(MemoryResource? memoryResource)
-        {
-            _sprite = memoryResource;
-        }
-
         public override Sprite GetFrame(int frameIndex)
         {
             return _sprite;
         }
-        
+
+        public static implicit operator StaticAnimation(Sprite sprite) => new(sprite);
+        public static implicit operator StaticAnimation(string sprite) => new(sprite);
     }
 }

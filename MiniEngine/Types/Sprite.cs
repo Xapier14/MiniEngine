@@ -7,5 +7,8 @@
         public IReadOnlySize Size => size;
 
         public static implicit operator Sprite(MemoryResource? textureResource) => new(textureResource, Vector2.Zero, MiniEngine.Size.NoSize);
+
+        public static implicit operator Sprite(string resourcePath) =>
+            new(resourcePath, Vector2.Zero, MiniEngine.Size.NoSize);
     }
 }
