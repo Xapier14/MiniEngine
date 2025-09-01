@@ -7,32 +7,37 @@ using System.Reflection;
 
 namespace MiniEngine
 {
-    public static class SystemManager
+    public class EcsManager
     {
-        private static readonly SystemList _systemList = new();
-        private static readonly Dictionary<Type, List<Component>> _components = new();
-        private static readonly Dictionary<Type, List<Type>> _systems = new();
-        private static readonly Dictionary<Type, System> _systemInstanceCache = new();
-        private static readonly Dictionary<(Type system, string eventType), MethodInfo> _systemEventsCache = new ();
-        private static readonly Dictionary<Type, List<Component>> _componentDiff = new();
-        private static Type? _currentlyExecutingSystem;
+        private readonly SystemList _systemList = [];
+        private readonly Dictionary<Type, List<Component>> _components = [];
+        private readonly Dictionary<Type, List<Type>> _systems = [];
+        private readonly Dictionary<Type, System> _systemInstanceCache = [];
+        private readonly Dictionary<(Type system, string eventType), MethodInfo> _systemEventsCache = [];
+        private readonly Dictionary<Type, List<Component>> _componentDiff = [];
+        private Type? _currentlyExecutingSystem;
 
-        internal static IReadOnlyDictionary<Type, List<Component>> ComponentDiff => _componentDiff;
+        internal IReadOnlyDictionary<Type, List<Component>> ComponentDiff => _componentDiff;
 
-        internal static bool InitializeWithDefaultSystems()
+        internal bool InitializeWithDefaultSystems()
         {
             try
             {
                 LoggingService.Debug("Initializing default ECS systems...");
                 _systemList.Clear();
                 _components.Clear();
+                _systems.Clear();
+                _systemInstanceCache.Clear();
+                _systemEventsCache.Clear();
+                _componentDiff.Clear();
+                _currentlyExecutingSystem = null;
+
                 RegisterAfter<System>(typeof(ScriptSystem), ScriptEvent.BeforeUpdate);
                 RegisterAfter<ScriptSystem>(ScriptEvent.BeforeUpdate, typeof(ScriptSystem), ScriptEvent.Update);
                 RegisterAfter<ScriptSystem>(ScriptEvent.Update, typeof(ScriptSystem), ScriptEvent.AfterUpdate);
                 RegisterAfter<ScriptSystem>(typeof(PhysicsSystem));
-                RegisterAfter<PhysicsSystem>(typeof(MotionSystem));
-                // RegisterAfter<MotionSystem>(typeof(TransformSystem));
-                RegisterAfter<MotionSystem>(typeof(ScriptSystem), ScriptEvent.BeforeDraw);
+                RegisterAfter<PhysicsSystem>(typeof(AnimationSystem));
+                RegisterAfter<AnimationSystem>(typeof(ScriptSystem), ScriptEvent.BeforeDraw);
                 RegisterAfter<ScriptSystem>(typeof(DrawSystem));
                 RegisterAfter<DrawSystem>(ScriptEvent.BeforeDraw, typeof(ScriptSystem), ScriptEvent.AfterDraw);
                 LoggingService.Debug("All default ECS OK.");
@@ -46,7 +51,7 @@ namespace MiniEngine
             return false;
         }
 
-        private static void AssociateComponentWithSystem(Type component, Type system)
+        private void AssociateComponentWithSystem(Type component, Type system)
         {
             if (!_systems.TryGetValue(component, out var systemList))
             {
@@ -57,11 +62,11 @@ namespace MiniEngine
                 systemList.Add(system);
         }
 
-        internal static T? Get<T>(object? data = null) where T : System => (T?)_systemList.FindSystemBySystemType<T>(data)?.Item1;
+        internal T? Get<T>(object? data = null) where T : System => (T?)_systemList.FindSystemBySystemType<T>(data)?.Item1;
 
-        public static void Register(Type systemType) => RegisterBefore<DrawSystem>(systemType);
+        public void Register(Type systemType) => RegisterBefore<DrawSystem>(systemType);
 
-        private static void UpdateSystemAssociation(Type systemType)
+        private void UpdateSystemAssociation(Type systemType)
         {
             var attributes = systemType.GetCustomAttributes()
                 .Where(attribute => attribute.GetType().IsAssignableTo(typeof(IHandlesComponentAttribute)));
@@ -73,21 +78,26 @@ namespace MiniEngine
             }
         }
 
-        private static void RaiseSystemEvent(Type systemType, string eventName, params object?[] args)
+        private void RaiseSystemEvent(Type systemType, string eventName, params object?[] args)
         {
+            if (!_systemInstanceCache.TryGetValue(systemType, out var system))
+            {
+                LoggingService.Fatal("Failed to raise event {0}. System does not have an instance.", eventName);
+                return;
+            }
             if (!_systemEventsCache.TryGetValue((systemType, eventName), out var eventMethod))
             {
-                eventMethod = systemType.GetMethod(eventName, BindingFlags.Public | BindingFlags.Static);
+                eventMethod = systemType.GetMethod(eventName, BindingFlags.Public | BindingFlags.Instance);
                 if (eventMethod != null)
                     _systemEventsCache.Add((systemType, eventName), eventMethod);
             }
-            eventMethod?.Invoke(null, args);
+            eventMethod?.Invoke(system, args);
         }
 
-        public static void RegisterBefore<T>(Type systemType, object? argument = null) where T : System
+        public void RegisterBefore<T>(Type systemType, object? argument = null) where T : System
             => RegisterBefore<T>(null, systemType, argument);
 
-        public static void RegisterBefore<T>(object? systemArg, Type systemType, object? argument = null) where T : System
+        public void RegisterBefore<T>(object? systemArg, Type systemType, object? argument = null) where T : System
         {
             if (systemType.IsAssignableFrom(typeof(System)))
             {
@@ -122,10 +132,10 @@ namespace MiniEngine
             UpdateSystemAssociation(systemType);
         }
 
-        public static void RegisterAfter<T>(Type systemType, object? argument = null) where T : System
+        public void RegisterAfter<T>(Type systemType, object? argument = null) where T : System
             => RegisterAfter<T>(null, systemType, argument);
 
-        public static void RegisterAfter<T>(object? systemArg, Type systemType, object? argument = null) where T : System
+        public void RegisterAfter<T>(object? systemArg, Type systemType, object? argument = null) where T : System
         {
             if (systemType.IsAssignableFrom(typeof(System)))
             {
@@ -162,7 +172,7 @@ namespace MiniEngine
             UpdateSystemAssociation(systemType);
         }
 
-        public static void RegisterEntity(Entity entity)
+        public void RegisterEntity(Entity entity)
         {
             foreach (var component in entity.GetComponents())
             {
@@ -170,7 +180,7 @@ namespace MiniEngine
             }
         }
 
-        public static void RegisterComponent(Component component)
+        public void RegisterComponent(Component component)
         {
             if (!_systems.TryGetValue(component.GetType(), out var systemList))
                 return;
@@ -203,7 +213,7 @@ namespace MiniEngine
             });
         }
 
-        public static void RegisterComponent<T>(Component component) where T : System
+        public void RegisterComponent<T>(Component component) where T : System
         {
             if (!_components.TryGetValue(typeof(T), out var list))
                 return;
@@ -231,7 +241,7 @@ namespace MiniEngine
             RaiseSystemEvent(typeof(T), "OnComponentRegister", component);
         }
 
-        public static void RemoveEntity(Entity entity)
+        public void RemoveEntity(Entity entity)
         {
             foreach (var component in entity.GetComponents())
             {
@@ -239,7 +249,7 @@ namespace MiniEngine
             }
         }
 
-        public static void RemoveComponent(Component component)
+        public void RemoveComponent(Component component)
         {
             if (!_systems.TryGetValue(component.GetType(), out var systemList))
                 return;
@@ -273,7 +283,7 @@ namespace MiniEngine
             });
         }
 
-        public static void RemoveComponent<T>(Component component) where T : System
+        public void RemoveComponent<T>(Component component) where T : System
         {
             if (!_components.TryGetValue(typeof(T), out var list))
                 return;
@@ -301,17 +311,28 @@ namespace MiniEngine
             list.Remove(component);
         }
 
-        public static int CountComponents()
+        public IEnumerable<T> GetComponents<T>() where T : IComponent
+        {
+            var list = new List<T>();
+            foreach (var (type, components) in _components)
+            {
+                list.AddRange(components.Where(component => component.GetType().IsAssignableTo(typeof(T))).Cast<T>());
+            }
+
+            return list;
+        }
+
+        public int CountComponents()
         {
             return _components.Sum((kp) => kp.Value.Count);
         }
 
-        public static int CountSystems()
+        public int CountSystems()
         {
             return _systemList.Count();
         }
 
-        public static void PurgeComponents()
+        public void PurgeComponents()
         {
             foreach (var (_, list) in _components)
             {
@@ -321,9 +342,18 @@ namespace MiniEngine
             }
         }
 
-        internal static void ProcessSystems()
+        public T? GetSystemInstance<T>() where T : System
+            => (T?)GetSystemInstance(typeof(T));
+
+        public System? GetSystemInstance(Type systemType)
         {
-            var systemList = (IEnumerable<SystemNode>)_systemList;
+            _systemInstanceCache.TryGetValue(systemType, out var system);
+            return system;
+        }
+
+        public void ProcessSystems()
+        {
+            IEnumerable<SystemNode>? systemList = _systemList;
             var tickList = new List<System>();
             foreach (var system in systemList)
             {
@@ -337,7 +367,7 @@ namespace MiniEngine
                 if (!_components.TryGetValue(system.Value.GetType(), out var componentList))
                     continue;
                 _currentlyExecutingSystem = system.Value.GetType();
-                system.Value?.HandleComponents(componentList, system.Argument);
+                system.Value?.HandleComponents(this, componentList, system.Argument);
                 _currentlyExecutingSystem = null;
                 // process diff list
                 foreach (var (systemType, diffList) in ComponentDiff)

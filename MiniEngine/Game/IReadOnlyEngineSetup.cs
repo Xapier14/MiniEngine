@@ -1,11 +1,17 @@
-﻿namespace MiniEngine;
+﻿using System.Collections.Generic;
+
+namespace MiniEngine;
 
 public interface IReadOnlyEngineSetup
 {
-    public bool? StartInFullScreen { get; set; }
-    public Size? WindowSize { get; set; }
-    public float? FpsLimit { get; set; }
-    public bool? DisableGamePad { get; set; }
-    public string? InitialWindowTitle { get; set; }
-    public string? AssetsFile { get; set; }
+    public bool? StartInFullScreen { get; }
+    public Size? WindowSize { get; }
+    public float? FpsLimit { get; }
+    public float? GameSpeed { get; }
+    public bool? DisableGamePad { get; }
+    public bool? DisableCursor { get; }
+    public bool? InvertYAxis { get; }
+    public string? InitialWindowTitle { get; }
+    public string? AssetsFile { get; }
+    public IDictionary<string, object>? AdditionalConfiguration { get; set; }
 }

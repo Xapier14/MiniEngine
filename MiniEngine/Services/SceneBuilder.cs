@@ -1,7 +1,5 @@
 ﻿using MiniEngine.Utility;
 using System;
-using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -9,157 +7,9 @@ using System.Xml;
 
 namespace MiniEngine
 {
-    public static class Factory
+    internal static class SceneBuilder
     {
-        private static readonly Dictionary<Type, ConstructorInfo[]> _entityInjectedConstructorCache = new();
-        private static readonly Dictionary<Type, ConstructorInfo?> _entityDefaultConstructorCache = new();
-        private static readonly Dictionary<Type, ConstructorInfo?> _componentConstructorCache = new();
-
-        public static T? TryCreateEntity<T>(params object[] args) where T : Entity
-            => (T?)TryCreateEntity(typeof(T), args);
-
-        public static Entity? TryCreateEntity(Type type, params object[] args)
-        {
-            var entityType = type;
-            if (entityType.IsAssignableFrom(typeof(Entity)))
-            {
-                LoggingService.Error("Error creating entity {0}, type is not assignable to Entity.", entityType.Name);
-                return null;
-            }
-
-            if (!_entityInjectedConstructorCache.TryGetValue(entityType, out var constructors))
-            {
-                constructors = entityType.GetConstructors();
-                _entityInjectedConstructorCache.Add(entityType, constructors);
-            }
-            if (!_entityDefaultConstructorCache.TryGetValue(entityType, out var entityCtr))
-            {
-                entityCtr = entityType.GetConstructor(Array.Empty<Type>());
-                _entityDefaultConstructorCache.Add(entityType, entityCtr);
-            }
-
-            var autoInjectTypes = Array.Empty<Type>();
-            Entity? result = null;
-            foreach (var constructor in constructors)
-            {
-                try
-                {
-                    var autoInjectAttributes = constructor.GetCustomAttributes()
-                        .Where(attribute => attribute.GetType().IsAssignableTo(typeof(IAutoInjectAttribute)));
-                    autoInjectTypes = autoInjectAttributes.Cast<IAutoInjectAttribute>().Select(attribute => attribute.InjectType)
-                        .ToArray();
-
-                    var injectAttributes = constructor.GetCustomAttributes()
-                        .Where(attribute => attribute.GetType().IsAssignableTo(typeof(IInjectAttribute)));
-                    var injectTypes = injectAttributes.Cast<IInjectAttribute>().Select(attribute => attribute.InjectType)
-                        .ToImmutableArray();
-                    var parameters = constructor.GetParameters().ToImmutableArray();
-                    var argumentList = new List<object?>();
-                    var argIndex = 0;
-                    foreach (var parameter in parameters)
-                    {
-                        var parameterType = parameter.ParameterType;
-
-                        if (!_componentConstructorCache.TryGetValue(parameterType, out var ctr))
-                        {
-                            ctr = parameterType.GetConstructor(Array.Empty<Type>());
-                            _componentConstructorCache.Add(parameterType, ctr);
-                        }
-
-                        var isValidInjectType = injectTypes.Contains(parameterType) ||
-                                                injectTypes.Any(injectType => injectType.IsAssignableFrom(parameterType));
-
-                        if (isValidInjectType && ctr != null)
-                        {
-                            argumentList.Add(ctr.Invoke(null));
-                            continue;
-                        }
-
-                        if (argIndex < args.Length && args[argIndex].GetType().IsAssignableTo(parameterType))
-                        {
-                            argumentList.Add(args[argIndex]);
-                            argIndex++;
-                            continue;
-                        }
-
-                        if (parameter.HasDefaultValue)
-                        {
-                            argumentList.Add(parameter.DefaultValue!);
-                        }
-                    }
-
-                    if (parameters.Length != argumentList.Count)
-                        continue;
-                    result = (Entity)constructor.Invoke(argumentList.ToArray());
-
-                    var components = argumentList.Where(argument =>
-                        argument?.GetType().IsAssignableTo(typeof(Component)) == true).Cast<Component>();
-                    foreach (var component in components)
-                        result.AddComponent(component);
-
-                    break;
-                }
-                catch (Exception e)
-                {
-                    LoggingService.Trace("Error creating entity, constructor invocation threw an exception. Trying other signatures...", e);
-                }
-            }
-
-            if (result == null && entityCtr == null)
-            {
-                LoggingService.Error("Could not create entity of type {0}. No suitable constructor found.", entityType.Name);
-                return null;
-            }
-
-            try
-            {
-                result ??= (Entity?)entityCtr?.Invoke(null);
-            }
-            catch (Exception e)
-            {
-                LoggingService.Trace("Error creating entity, default constructor invocation threw an exception.", e);
-            }
-
-            if (result == null)
-            {
-                LoggingService.Error("Could not create entity of type {0}.", entityType.Name);
-                return null;
-            }
-
-
-            // inject auto/anonymous components
-            foreach (var autoInjectType in autoInjectTypes)
-            {
-                if (!_componentConstructorCache.TryGetValue(autoInjectType, out var ctr))
-                {
-                    ctr = autoInjectType.GetConstructor(Array.Empty<Type>());
-                    _componentConstructorCache.Add(autoInjectType, ctr);
-                }
-                var component = (Component?)ctr?.Invoke(null);
-                if (component is null)
-                {
-                    LoggingService.Error("Entity requires component {0}, but component construction failed.",
-                        autoInjectType.Name);
-                    continue;
-                }
-                result.AddComponent(component);
-            }
-
-            return result;
-        }
-        public static Scene BuildScene(MemoryResource xmlMemoryResource)
-        {
-            using var stream = xmlMemoryResource.CreateStream();
-            return BuildScene(stream);
-        }
-
-        public static Scene BuildSceneXml(string xmlFilePath)
-        {
-            using var stream = File.OpenRead(xmlFilePath);
-            return BuildScene(stream);
-        }
-
-        private static Scene BuildScene(Stream stream)
+        public static Scene BuildScene(Stream stream)
         {
             var scene = new Scene();
             var typeResolver = new TypeResolver();
@@ -188,28 +38,6 @@ namespace MiniEngine
                     }
                 }
 
-                if (properties != null)
-                {
-                    if (properties["ViewPosition"] is { } viewPosition)
-                    {
-                        var x = int.Parse(viewPosition.Attributes["X"]?.Value ?? "0");
-                        var y = int.Parse(viewPosition.Attributes["Y"]?.Value ?? "0");
-                        scene.ViewPosition.Set(x, y);
-                    }
-                    if (properties["ViewRotation"] is { } viewRotation)
-                    {
-                        var rotationString = viewRotation.Attributes.GetNamedItem("Value")?.Value ?? viewRotation.Value ?? "0.0";
-                        scene.ViewRotation = float.Parse(rotationString);
-                    }
-
-                    if (properties["BackgroundColor"] is { } backgroundColor)
-                    {
-                        var colorString = backgroundColor.Attributes.GetNamedItem("Value")?.Value ?? backgroundColor.Value ?? "0.0";
-                        scene.BackgroundColor = Color.Parse(colorString);
-                    }
-                    // add other properties
-                }
-
                 if (entities != null)
                 {
                     foreach (XmlElement entityNode in entities.ChildNodes)
@@ -218,9 +46,45 @@ namespace MiniEngine
                         var entityType = typeResolver.ResolveType(entityTypeName);
                         if (entityType == null)
                             throw new EntityCreationFailException($"Could not resolve type of {entityTypeName}.");
-                        var entity = TryCreateEntity(entityType);
+                        var entity = EntityFactory.TryCreateEntity(entityType);
                         if (entity == null)
                             throw new EntityCreationFailException($"Failed creating instance of entity {entityTypeName}.");
+
+                        // parse entity attributes
+                        foreach (XmlAttribute attribute in entityNode.Attributes)
+                        {
+                            var attributeName = attribute.Name;
+                            var member = entityType.GetMember(attributeName)
+                                .FirstOrDefault(memberInfo =>
+                                    memberInfo.IsPublic() &&
+                                    (memberInfo.MemberType.HasFlag(MemberTypes.Property) ||
+                                     memberInfo.MemberType.HasFlag(MemberTypes.Field)));
+                            if (member == null)
+                            {
+                                LoggingService.Warn("Warning, attribute {0} of entity {1} does not exist as a public property of field.",
+                                    attributeName,
+                                    entityTypeName);
+                                continue;
+                            }
+
+                            var memberType = member.GetUnderlyingType()!;
+                            var genericTypeArgs = memberType.GetGenericArguments();
+                            if (memberType.IsGenericType)
+                                memberType = memberType.GetGenericTypeDefinition();
+                            if (memberType == typeof(Nullable<>))
+                                memberType = genericTypeArgs.First();
+                            var value = TypeResolver.AutoParse(attribute.Value, memberType);
+                            if (member.MemberType.HasFlag(MemberTypes.Field))
+                            {
+                                var fieldInfo = (FieldInfo)member;
+                                fieldInfo.SetValue(entity, value);
+                            }
+                            else if (member.MemberType.HasFlag(MemberTypes.Property))
+                            {
+                                var propertyInfo = (PropertyInfo)member;
+                                propertyInfo.SetValue(entity, value);
+                            }
+                        }
 
                         // configure entity specific component configuration
                         foreach (XmlElement componentNode in entityNode.ChildNodes)
@@ -232,7 +96,7 @@ namespace MiniEngine
                                 LoggingService.Warn("Warning, failed to resolve type of {0}.", componentName);
                                 continue;
                             }
-                            var component = entity.GetComponent(componentType);
+                            var component = entity.TryGetComponent(componentType);
                             if (component == null)
                             {
                                 LoggingService.Warn("Warning, entity {0} does not have component {1}.", entityTypeName, componentName);
@@ -360,6 +224,37 @@ namespace MiniEngine
 
                         scene.AddEntity(entity);
                     }
+                }
+
+                if (properties != null)
+                {
+                    if (properties["ViewPosition"] is { } viewPosition)
+                    {
+                        var x = int.Parse(viewPosition.Attributes["X"]?.Value ?? "0");
+                        var y = int.Parse(viewPosition.Attributes["Y"]?.Value ?? "0");
+                        scene.ViewPosition.Set(x, y);
+                    }
+                    if (properties["ViewRotation"] is { } viewRotation)
+                    {
+                        var rotationString = viewRotation.Attributes.GetNamedItem("Value")?.Value ?? viewRotation.Value ?? "0.0";
+                        scene.ViewRotation = float.Parse(rotationString);
+                    }
+
+                    if (properties["FollowEntity"] is { } followEntity)
+                    {
+                        var followEntityName = followEntity.Attributes.GetNamedItem("Name")?.Value ?? followEntity.Value;
+                        if (followEntityName != null)
+                        {
+                            scene.FollowEntity = scene.GetEntity(followEntityName);
+                        }
+                    }
+
+                    if (properties["BackgroundColor"] is { } backgroundColor)
+                    {
+                        var colorString = backgroundColor.Attributes.GetNamedItem("Value")?.Value ?? backgroundColor.Value ?? "0.0";
+                        scene.BackgroundColor = Color.Parse(colorString);
+                    }
+                    // add other properties
                 }
             }
             catch (Exception ex)

@@ -13,23 +13,24 @@ namespace MiniEngine
         public Vector2F ViewPosition = Vector2F.Zero;
         public float ViewRotation = 0f;
         public Color BackgroundColor = Color.Black;
+        public Entity? FollowEntity { get; set; }
 
         public bool ContainsEntity(Entity entity)
             => entity.ParentScene == this && _entities.Contains(entity);
 
         public T CreateEntity<T>(params object[] args) where T : Entity
         {
-            var entity = Factory.TryCreateEntity<T>(args);
+            var entity = EntityFactory.TryCreateEntity<T>(args);
             if (entity == null)
             {
-                GameEngine.FatalExit(100);
+                GameContext.GetGameEngine().FatalExit(100);
                 return default(T)!;
             }
             AddEntity(entity);
             return entity;
         }
 
-        public void AddEntity(Entity entity)
+        public void AddEntity(Entity entity, GameEngine? gameEngine = null)
         {
             if (entity.Destroyed)
             {
@@ -48,8 +49,8 @@ namespace MiniEngine
                 return;
             }
 
-            if (SceneManager.CurrentScene == this)
-                SystemManager.RegisterEntity(entity);
+            if (GameContext.GetGameEngine().SceneManager.CurrentScene == this)
+                GameContext.GetGameEngine().EcsManager.RegisterEntity(entity);
 
             entity.ParentScene = this;
             _entities.Add(entity);
@@ -63,8 +64,8 @@ namespace MiniEngine
                 return;
             }
 
-            if (SceneManager.CurrentScene == this)
-                SystemManager.RemoveEntity(entity);
+            if (GameContext.GetGameEngine().SceneManager.CurrentScene == this)
+                GameContext.GetGameEngine().EcsManager.RemoveEntity(entity);
 
             entity.ParentScene = null;
             _entities.Remove(entity);
@@ -75,6 +76,13 @@ namespace MiniEngine
 
         public IEnumerable<Entity> GetEntity(Type entityType)
             => _entities.Where(e => e.GetType() == entityType);
+
+        public Entity? GetEntity(string name)
+            => _entities.FirstOrDefault(entity => entity.Name == name);
+
+        public T? GetEntity<T>(string name) where T : Entity
+            => (T?)_entities.Where(entity => entity.GetType() == typeof(T))
+                .FirstOrDefault(entity => entity.Name == name);
 
         public IEnumerator<Entity> GetEnumerator()
         {

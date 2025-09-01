@@ -7,13 +7,13 @@ using static SDL2.SDL;
 
 namespace MiniEngine
 {
-    public static class WindowManager
+    public class WindowManager(GameEngine gameEngine, InputManager inputManager)
     {
-        public static GameWindow? GameWindow { get; private set; }
+        public GameWindow? GameWindow { get; private set; }
 
-        public static void CreateWindow(string initialWindowTitle)
+        public void CreateWindow(string initialWindowTitle)
         {
-            if (!GameEngine.IsRunning)
+            if (!gameEngine.IsRunning)
             {
                 var exception =
                     new EngineNotRunningException(
@@ -28,7 +28,7 @@ namespace MiniEngine
                 return;
             }
 
-            var setup = GameEngine.Setup;
+            var setup = gameEngine.Setup;
             var windowSize = setup.WindowSize!.Value;
             var windowPtr = SDL_CreateWindow(initialWindowTitle, 
                 SDL_WINDOWPOS_UNDEFINED, 
@@ -69,14 +69,43 @@ namespace MiniEngine
             GameWindow = new GameWindow(windowSize, windowPtr, rendererPtr);
         }
 
-        internal static void PumpEvents()
+        internal void PumpEvents()
         {
             _ = SDL_PollEvent(out var sdlEvent);
-            if (sdlEvent.type == SDL_EventType.SDL_WINDOWEVENT)
+            switch (sdlEvent.type)
             {
-                if (sdlEvent.window.windowEvent == SDL_WindowEventID.SDL_WINDOWEVENT_CLOSE)
-                    GameEngine.RequestHalt();
+                case SDL_EventType.SDL_WINDOWEVENT:
+                    ProcessWindowEvent(sdlEvent);
+                    break;
+                case SDL_EventType.SDL_KEYDOWN:
+                    ProcessKeyDownEvent(sdlEvent);
+                    break;
+                case SDL_EventType.SDL_KEYUP:
+                    ProcessKeyUpEvent(sdlEvent);
+                    break;
             }
+        }
+
+        private void ProcessWindowEvent(SDL_Event sdlEvent)
+        {
+            switch (sdlEvent.window.windowEvent)
+            {
+                case SDL_WindowEventID.SDL_WINDOWEVENT_CLOSE:
+                    gameEngine.RequestHalt();
+                    break;
+            }
+        }
+
+        private void ProcessKeyDownEvent(SDL_Event sdlEvent)
+        {
+            var keycode = sdlEvent.key.keysym.sym;
+            inputManager.UpdateKeyState((Key)keycode, true);
+        }
+
+        private void ProcessKeyUpEvent(SDL_Event sdlEvent)
+        {
+            var keycode = sdlEvent.key.keysym.sym;
+            inputManager.UpdateKeyState((Key)keycode, false);
         }
     }
 }

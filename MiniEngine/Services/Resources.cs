@@ -10,8 +10,8 @@ namespace MiniEngine
     {
         private class Pack
         {
-            private readonly Dictionary<string, MemoryResource> _resourceCache = new();
-            private readonly Dictionary<string, FileOffset> _offsets = new();
+            private readonly Dictionary<string, MemoryResource> _resourceCache = [];
+            private readonly Dictionary<string, FileOffset> _offsets = [];
             public IDictionary<string, MemoryResource> ResourceCache => _resourceCache;
             public IDictionary<string, FileOffset> Offsets => _offsets;
             public FileStream? PackStream { get; set; }
@@ -43,9 +43,8 @@ namespace MiniEngine
             }
         }
 
-        private static readonly Dictionary<string, Pack> _packs = new();
+        private static readonly Dictionary<string, Pack> _packs = [];
         private static readonly SortedList<int, string> _packPaths = new(new DescendingComparer<int>());
-        //private static FileStream? _packStream;
 
         public static void UsePack(string path, int priority = 0)
         {
@@ -72,24 +71,25 @@ namespace MiniEngine
         public static void ClosePack(string path)
         {
             var absolutePath = Path.GetFullPath(path);
-            if (_packs.TryGetValue(absolutePath, out var pack))
+
+            if (!_packs.TryGetValue(absolutePath, out var pack))
+                return;
+
+            pack.Offsets.Clear();
+            foreach (var (_, resource) in pack.ResourceCache)
             {
-                pack.Offsets.Clear();
-                foreach (var (_, resource) in pack.ResourceCache)
-                {
-                    resource.Dispose();
-                }
-
-                pack.ResourceCache.Clear();
-
-                pack.PackStream?.Close();
-                _packs.Remove(absolutePath);
-                var pathIndex = _packPaths.IndexOfValue(absolutePath);
-                if (pathIndex != -1)
-                    _packPaths.RemoveAt(pathIndex);
-                var fileInfo = new FileInfo(absolutePath);
-                LoggingService.Info("Closed '{0}' pack file.", fileInfo.Name);
+                resource.Dispose();
             }
+
+            pack.ResourceCache.Clear();
+
+            pack.PackStream?.Close();
+            _packs.Remove(absolutePath);
+            var pathIndex = _packPaths.IndexOfValue(absolutePath);
+            if (pathIndex != -1)
+                _packPaths.RemoveAt(pathIndex);
+            var fileInfo = new FileInfo(absolutePath);
+            LoggingService.Info("Closed '{0}' pack file.", fileInfo.Name);
         }
 
         public static void ClosePacks()
@@ -112,6 +112,29 @@ namespace MiniEngine
             }
 
             return null;
+        }
+
+        public static string GetFriendlyName(MemoryResource? memoryResource)
+        {
+            string? friendlyName = null;
+            if (memoryResource != null)
+                return "null";
+            foreach (var (order, absolutePath) in _packPaths)
+            {
+                var pack = _packs[absolutePath];
+                foreach (var (name, resource) in pack.ResourceCache)
+                {
+                    if (memoryResource != resource)
+                        continue;
+                    pack.Offsets.TryGetValue(name, out var offset);
+                    friendlyName = $"[{order}]{absolutePath}: {name} @{offset?.Offset.ToString() ?? "n/a"}";
+                }
+
+                if (friendlyName != null)
+                    break;
+            }
+
+            return friendlyName ?? "n/a";
         }
     }
 }

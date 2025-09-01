@@ -2,6 +2,7 @@
 
 namespace MiniEngine.Components
 {
+    [OnlyOneOfType]
     public class Transform : Component
     {
         public Vector2F Translate = Vector2F.Zero;

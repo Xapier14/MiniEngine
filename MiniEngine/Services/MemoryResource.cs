@@ -12,7 +12,7 @@ namespace MiniEngine
     public class MemoryResource : IDisposable
     {
         private GCHandle _handle;
-        private readonly int _size = 0;
+        private readonly int _size;
 
         public int Size => Disposed ? 0 : _size;
         public IntPtr RwHandle { get; private set; }
@@ -48,6 +48,11 @@ namespace MiniEngine
             return _handle.Target is not IReadOnlyCollection<byte> data
                 ? Stream.Null
                 : new MemoryStream(data.ToArray());
+        }
+
+        public override string ToString()
+        {
+            return Resources.GetFriendlyName(this);
         }
 
         public static MemoryResource FromStream(MemoryStream stream)

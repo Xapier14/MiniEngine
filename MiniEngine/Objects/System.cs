@@ -12,7 +12,9 @@ namespace MiniEngine
         private readonly Dictionary<(Type, bool), MethodInfo> _methodCache = new();
         private long? _lastTick;
         public double DeltaTime { get; private set; }
+        public float DeltaTimeF => (float)DeltaTime;
 
+        protected virtual void BeforeStep(object? arg) { }
         protected virtual void Step(object? arg) { }
         protected virtual void AfterStep(object? arg) { }
 
@@ -48,14 +50,15 @@ namespace MiniEngine
             }
         }
 
-        internal void HandleComponents(IEnumerable<Component> components, object? arg = null)
+        internal void HandleComponents(EcsManager ecsManager, IEnumerable<Component> components, object? arg = null)
         {
+            BeforeStep(arg);
             Step(arg);
             var componentsSnapshot = components.ToArray();
             foreach (var component in componentsSnapshot)
             {
                 // skip if component is in component diff (flagged for removal)
-                if (SystemManager.ComponentDiff.TryGetValue(GetType(), out var componentDiff))
+                if (ecsManager.ComponentDiff.TryGetValue(GetType(), out var componentDiff))
                     if (componentDiff.Contains(component))
                         continue;
 
@@ -78,11 +81,11 @@ namespace MiniEngine
                                 componentType
                             });
 
-                    if (methodInfo == null)
+                    if (methodInfo == null && arg != null)
                     {
                         LoggingService.Error(
-                            arg == null ?
-                                "System {0} does not handle component {1}" :
+                            // arg == null ?
+                            //     "System {0} does not handle component {1}" :
                                 "System {0} does not handle component {1} with additional parameter of type object.",
                             systemType.Name,
                             componentType.Name);
@@ -93,9 +96,9 @@ namespace MiniEngine
                 try
                 {
                     var args = new object?[] { component };
-                    if (methodInfo.GetParameters().Length > 1)
+                    if ((methodInfo?.GetParameters().Length ?? 0) > 1)
                         args = args.Concat(new[] { arg }).ToArray();
-                    methodInfo.Invoke(this, args);
+                    methodInfo?.Invoke(this, args);
                 }
                 catch (Exception e)
                 {

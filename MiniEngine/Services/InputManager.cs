@@ -1,19 +1,10 @@
-﻿using static SDL2.SDL;
+﻿using System.Collections.Generic;
+using MiniEngine.Utility;
+using MiniEngine.Windowing;
+using static SDL2.SDL;
 
 namespace MiniEngine
 {
-    public enum MouseButton : byte
-    {
-        Left = 0,
-        Right = 1,
-        Middle = 2,
-        M1 = 0,
-        M2 = 1,
-        M3 = 2,
-        M4 = 3,
-        M5 = 4,
-    }
-
     public struct MouseState
     {
         public int X = -1;
@@ -27,18 +18,44 @@ namespace MiniEngine
         public MouseState() { }
     }
 
-    public static class InputManager
+    public class InputManager(GameEngine gameEngine, SceneManager sceneManager)
     {
-        private static MouseState _previousMouseState = new();
-        private static MouseState _mouseState = new();
-        public static MouseState MouseState => _mouseState;
+        private MouseState _previousMouseState = new();
+        private MouseState _mouseState = new();
+        private Vector2 _windowMousePosition;
+        private Vector2F _sceneMousePosition;
+        private readonly Dictionary<Key, bool> _keyStatesSnapshot = [];
+        private readonly Dictionary<Key, bool> _keyStates = [];
+        public MouseState MouseState => _mouseState;
+        public Vector2 WindowMousePosition => _windowMousePosition;
+        public Vector2F SceneMousePosition => _sceneMousePosition;
 
-        public static void UpdateState()
+        private GameWindow? _gameWindow => gameEngine.WindowManager.GameWindow;
+
+        private void AutoCorrectVector(ref Vector2 vector)
         {
-            UpdateMouseState();
+            if (gameEngine.Setup.InvertYAxis != true)
+                return;
+            vector.Y = _gameWindow?.WindowSize.Height ?? 0 - vector.Y;
         }
 
-        public static bool IsMouseButtonPressed(MouseButton mouseButton)
+        private void AutoCorrectVector(ref Vector2F vector)
+        {
+            if (gameEngine.Setup.InvertYAxis != true)
+                return;
+            vector.Y = _gameWindow?.WindowSize.Height ?? 0f - vector.Y;
+        }
+
+        internal void UpdateState()
+        {
+            UpdateMouseState();
+            UpdateKeyStatesSnapshot();
+        }
+
+        internal void UpdateKeyState(Key key, bool pressed)
+            => _keyStates[key] = pressed;
+
+        public bool IsMouseButtonPressed(MouseButton mouseButton)
         {
             return mouseButton switch
             {
@@ -51,7 +68,7 @@ namespace MiniEngine
             };
         }
 
-        public static bool IsMouseButtonReleased(MouseButton mouseButton)
+        public bool IsMouseButtonReleased(MouseButton mouseButton)
         {
             return mouseButton switch
             {
@@ -64,8 +81,7 @@ namespace MiniEngine
             };
         }
 
-
-        public static bool IsMouseButtonDown(MouseButton mouseButton)
+        public bool IsMouseButtonDown(MouseButton mouseButton)
         {
             return mouseButton switch
             {
@@ -78,16 +94,52 @@ namespace MiniEngine
             };
         }
 
-        public static bool IsMouseButtonUp(MouseButton mouseButton)
+        public bool IsMouseButtonUp(MouseButton mouseButton)
             => !IsMouseButtonDown(mouseButton);
 
-        public static Vector2 GetMousePosition()
+        public bool IsKeyPressed(Key key)
+        {
+            _keyStatesSnapshot.TryGetValue(key, out var previousKeyState);
+            _keyStates.TryGetValue(key, out var currentKeyState);
+            return !previousKeyState && currentKeyState;
+        }
+
+        public bool IsKeyReleased(Key key)
+        {
+            _keyStatesSnapshot.TryGetValue(key, out var previousKeyState);
+            _keyStates.TryGetValue(key, out var currentKeyState);
+            return previousKeyState && !currentKeyState;
+        }
+
+        public bool IsKeyDown(Key key)
+        {
+            _keyStates.TryGetValue(key, out var currentKeyState);
+            return currentKeyState;
+        }
+
+        public bool IsKeyUp(Key key)
+            => !IsKeyDown(key);
+
+        public Vector2 GetMousePosition()
             => (_mouseState.X, _mouseState.Y);
 
-        private static bool MaskCheck(uint mask, uint value)
+        public IEnumerable<Key> DetectPresses()
+        {
+            var diffList = new List<Key>();
+            foreach (var (key, state) in _keyStates)
+            {
+                _keyStatesSnapshot.TryGetValue(key, out var previousState);
+                if (state && !previousState)
+                    diffList.Add(key);
+            }
+
+            return diffList;
+        }
+
+        private bool CheckMask(uint mask, uint value)
             => (mask & value) != 0;
 
-        private static void CopyPreviousMouseState()
+        private void CopyPreviousMouseState()
         {
             _previousMouseState.X = _mouseState.X;
             _previousMouseState.Y = _mouseState.Y;
@@ -98,17 +150,36 @@ namespace MiniEngine
             _previousMouseState.MouseButton5 = _mouseState.MouseButton5;
         }
 
-        private static void UpdateMouseState()
+        private void UpdateMouseState()
         {
             CopyPreviousMouseState();
             var buttonBitMask = SDL_GetMouseState(out var mouseX, out var mouseY);
-            _mouseState.X = mouseX;
-            _mouseState.Y = mouseY;
-            _mouseState.MouseButton1 = MaskCheck(SDL_BUTTON_LMASK, buttonBitMask);
-            _mouseState.MouseButton2 = MaskCheck(SDL_BUTTON_RMASK, buttonBitMask);
-            _mouseState.MouseButton3 = MaskCheck(SDL_BUTTON_MMASK, buttonBitMask);
-            _mouseState.MouseButton4 = MaskCheck(SDL_BUTTON_X1MASK, buttonBitMask);
-            _mouseState.MouseButton5 = MaskCheck(SDL_BUTTON_X2MASK, buttonBitMask);
+
+            _windowMousePosition.X = mouseX;
+            _windowMousePosition.Y = gameEngine.Setup.InvertYAxis == true ? gameEngine.Setup.WindowSize!.Value.Height - mouseY : mouseY;
+            _mouseState.X = _windowMousePosition.X;
+            _mouseState.Y = _windowMousePosition.Y;
+            var scenePosition = sceneManager.CurrentScene?.ViewPosition ?? (0, 0);
+            var sceneRotation = sceneManager.CurrentScene?.ViewRotation ?? 0f;
+            var centerOfWindow = (_gameWindow!.WindowSize.Width / 2,
+                _gameWindow!.WindowSize.Height / 2);
+            var centerToMouseAngle = Formulas.AngleBetween(centerOfWindow, _windowMousePosition);
+            var centerToMouseDistance = Formulas.DistanceFrom(centerOfWindow, _windowMousePosition);
+
+            _sceneMousePosition = scenePosition + Vector2F.From(centerToMouseAngle - sceneRotation, centerToMouseDistance);
+
+            _mouseState.MouseButton1 = CheckMask(SDL_BUTTON_LMASK, buttonBitMask);
+            _mouseState.MouseButton2 = CheckMask(SDL_BUTTON_RMASK, buttonBitMask);
+            _mouseState.MouseButton3 = CheckMask(SDL_BUTTON_MMASK, buttonBitMask);
+            _mouseState.MouseButton4 = CheckMask(SDL_BUTTON_X1MASK, buttonBitMask);
+            _mouseState.MouseButton5 = CheckMask(SDL_BUTTON_X2MASK, buttonBitMask);
+        }
+
+        private void UpdateKeyStatesSnapshot()
+        {
+            _keyStatesSnapshot.Clear();
+            foreach (var (key, state) in  _keyStates)
+                _keyStatesSnapshot.Add(key, state);
         }
     }
 }

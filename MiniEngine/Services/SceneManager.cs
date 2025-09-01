@@ -1,23 +1,37 @@
-﻿namespace MiniEngine
-{
-    public static class SceneManager
-    {
-        private static Scene? _currentScene;
+﻿using System.IO;
 
-        public static Scene? CurrentScene
+namespace MiniEngine
+{
+    public class SceneManager(EcsManager ecsManager)
+    {
+        private Scene? _currentScene;
+
+        public Scene? CurrentScene
         {
             get => _currentScene;
             set
             {
                 _currentScene = value;
-                SystemManager.PurgeComponents();
+                ecsManager.PurgeComponents();
                 if (_currentScene == null)
                     return;
                 foreach (var entity in _currentScene)
                 {
-                    SystemManager.RegisterEntity(entity);
+                    ecsManager.RegisterEntity(entity);
                 }
             }
+        }
+
+        public Scene BuildScene(MemoryResource xmlMemoryResource)
+        {
+            using var stream = xmlMemoryResource.CreateStream();
+            return SceneBuilder.BuildScene(stream);
+        }
+
+        public Scene BuildSceneXml(string xmlFilePath)
+        {
+            using var stream = File.OpenRead(xmlFilePath);
+            return SceneBuilder.BuildScene(stream);
         }
     }
 }

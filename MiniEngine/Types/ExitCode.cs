@@ -1,6 +1,6 @@
 ﻿namespace MiniEngine
 {
-    public enum ExitCode
+    public enum ExitCode : int
     {
         GeneralError,
         GameError,

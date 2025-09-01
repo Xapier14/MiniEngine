@@ -6,48 +6,140 @@ using System.Collections.Generic;
 using System.Linq;
 using static SDL2.SDL;
 using static SDL2.SDL_image;
+using static SDL2.SDL_ttf;
+using static SDL2.SDL_mixer;
 
 namespace MiniEngine
 {
-    public static class GameEngine
+    public class GameEngine
     {
-        private static bool _isInitialized;
-        private static bool _isReleased;
-        private static bool _canAddInitializers = true;
-        private static bool _canAddReleasers = true;
-        private static bool _requestedHalt;
-        private static EngineSetup _setup = EngineSetup.Default;
-        private static readonly List<Func<bool>> _initializers = new();
-        private static readonly List<Func<bool>> _releasers = new();
-        private static readonly List<Func<bool>> _externalInitializers = new();
-        private static readonly List<Func<bool>> _externalReleasers = new();
+        private bool _isInitialized;
+        private bool _isReleased;
+        private bool _canAddInitializers = true;
+        private bool _canAddReleasers = true;
+        private bool _requestedHalt;
+        private EngineSetup _setup = EngineSetup.Default;
+        private readonly List<Func<bool>> _initializers = [];
+        private readonly List<Func<bool>> _releasers = [];
+        private readonly List<Func<bool>> _externalInitializers = [];
+        private readonly List<Func<bool>> _externalReleasers = [];
 
-        public static IReadOnlyEngineSetup Setup => _setup;
-        public static bool IsRunning { get; private set; }
-
-        static GameEngine()
+        // services
+        private TaskScheduler? _taskScheduler;
+        public TaskScheduler TaskScheduler
         {
+            get
+            {
+                if (_taskScheduler == null)
+                    throw new EngineNotInitializedException();
+                return _taskScheduler;
+            }
+            private set => _taskScheduler = value;
+        }
+
+        private EcsManager? _ecsManager;
+        public EcsManager EcsManager
+        {
+            get
+            {
+                if (_ecsManager == null)
+                    throw new EngineNotInitializedException();
+                return _ecsManager;
+            }
+            private set => _ecsManager = value;
+        }
+        private AudioService? _audioService;
+        public AudioService AudioService
+        {
+            get
+            {
+                if (_audioService == null)
+                    throw new EngineNotInitializedException();
+                return _audioService;
+            }
+            private set => _audioService = value;
+        }
+
+        private SceneManager? _sceneManager;
+        public SceneManager SceneManager
+        {
+            get
+            {
+                if (_sceneManager == null)
+                    throw new EngineNotInitializedException();
+                return _sceneManager;
+            }
+            private set => _sceneManager = value;
+        }
+
+        private InputManager? _inputManager;
+        public InputManager InputManager
+        {
+            get
+            {
+                if (_inputManager == null)
+                    throw new EngineNotInitializedException();
+                return _inputManager;
+            }
+            private set => _inputManager = value;
+        }
+
+        private WindowManager? _windowManager;
+        public WindowManager WindowManager
+        {
+            get
+            {
+                if (_windowManager == null)
+                    throw new EngineNotInitializedException();
+                return _windowManager;
+            }
+            private set => _windowManager = value;
+        }
+
+        private Graphics? _graphics;
+        public Graphics Graphics
+        {
+            get
+            {
+                if (_graphics == null)
+                    throw new EngineNotInitializedException();
+                return _graphics;
+            }
+            private set => _graphics = value;
+        }
+
+        public IReadOnlyEngineSetup Setup => _setup;
+        public bool IsRunning { get; private set; }
+
+        public bool Initialize()
+        {
+            if (_isInitialized)
+                return false;
+
             LoggingService.Use(new ConsoleLogger());
 
             DllMap.RegisterDllMap();
 
-            _initializers.AddRange(new []
-            {
-                SystemManager.InitializeWithDefaultSystems,
+            TaskScheduler = new TaskScheduler();
+            EcsManager = new EcsManager();
+            AudioService = new AudioService(TaskScheduler);
+            SceneManager = new SceneManager(EcsManager);
+            InputManager = new InputManager(this, SceneManager);
+            WindowManager = new WindowManager(this, InputManager);
+            Graphics = new Graphics(this);
+
+            _initializers.AddRange([
+                AudioService.InitializeDevice,
+                EcsManager.InitializeWithDefaultSystems,
                 InitializeGameAssets
-            });
+            ]);
 
-            _releasers.AddRange(new []
-            {
+            _releasers.AddRange([
                 ReleaseComponents,
+                AudioService.CleanupCache,
                 ReleaseGameAssets
-            });
-        }
+            ]);
 
-        private static bool Initialize()
-        {
-            if (_isInitialized)
-                return false;
             var coreInitializersResult = _initializers.Any(initializer => initializer());
             if (coreInitializersResult)
             {
@@ -60,7 +152,7 @@ namespace MiniEngine
             return false;
         }
 
-        private static bool InitializeExternal()
+        private bool InitializeExternal()
         {
             if (!_externalInitializers.Any())
             {
@@ -79,7 +171,7 @@ namespace MiniEngine
             return false;
         }
 
-        private static bool Release()
+        private bool Release()
         {
             if (_isReleased)
                 return false;
@@ -102,7 +194,7 @@ namespace MiniEngine
             return externalReleasersResult;
         }
 
-        private static bool InitializeSDL()
+        private bool InitializeSDL()
         {
             if (SDL_Init(SDL_INIT_EVERYTHING) != 0)
             {
@@ -111,7 +203,7 @@ namespace MiniEngine
                 return true;
             }
 
-            var imgFlags = IMG_InitFlags.IMG_INIT_PNG | IMG_InitFlags.IMG_INIT_JPG;
+            const IMG_InitFlags imgFlags = IMG_InitFlags.IMG_INIT_PNG | IMG_InitFlags.IMG_INIT_JPG;
             if ((IMG_InitFlags)IMG_Init(imgFlags) != imgFlags)
             {
                 LoggingService.Fatal("Error initializing SDL_image.");
@@ -119,37 +211,52 @@ namespace MiniEngine
                 return true;
             }
 
+            if (TTF_Init() != 0)
+            {
+                LoggingService.Fatal("Error initializing SDL_ttf.");
+                LoggingService.Fatal(TTF_GetError());
+                return true;
+            }
+
+            const MIX_InitFlags mixFlags = MIX_InitFlags.MIX_INIT_OGG | MIX_InitFlags.MIX_INIT_OPUS | MIX_InitFlags.MIX_INIT_MP3;
+            if (Mix_Init(mixFlags) == 0)
+            {
+                LoggingService.Fatal("Error initializing SDL_mixer");
+                return true;
+            }
+
             LoggingService.Info("Initialized SDL2.");
             return false;
         }
 
-        private static bool InitializeGameAssets()
+        private bool InitializeGameAssets()
         {
             if (Setup.AssetsFile != null)
                 Resources.UsePack(Setup.AssetsFile);
             return false;
         }
 
-        private static bool ReleaseGameAssets()
+        private bool ReleaseGameAssets()
         {
             Resources.ClosePacks();
+            Graphics.ReleaseResources();
             return false;
         }
 
-        private static bool ReleaseComponents()
+        private bool ReleaseComponents()
         {
-            SystemManager.PurgeComponents();
+            EcsManager.PurgeComponents();
             return false;
         }
 
-        private static void GracefulExit()
+        private void GracefulExit()
         {
             _canAddReleasers = false;
             if (Release())
                 FatalExit(-1);
         }
 
-        internal static void FatalExit(int exitCode)
+        public void FatalExit(int exitCode)
         {
             LoggingService.Fatal("GameEngine has run into a fatal error and will forcibly exit.");
             if (exitCode == 0)
@@ -157,7 +264,10 @@ namespace MiniEngine
             Environment.Exit(exitCode);
         }
 
-        public static void RequestHalt()
+        public void FatalExit(ExitCode exitCode)
+            => FatalExit((int)exitCode);
+
+        public void RequestHalt()
         {
             if (_requestedHalt)
                 return;
@@ -165,7 +275,7 @@ namespace MiniEngine
             LoggingService.Debug("Requested GameEngine halt.");
         }
 
-        public static void UseSetup(params EngineSetup[] additionalSetups)
+        public void UseSetup(params EngineSetup[] additionalSetups)
         {
             if (IsRunning)
             {
@@ -184,7 +294,7 @@ namespace MiniEngine
             }
         }
 
-        public static void AddInitializer(Func<bool> initializerDelegate)
+        public void AddInitializer(Func<bool> initializerDelegate)
         {
             if (!_canAddInitializers)
             {
@@ -194,7 +304,22 @@ namespace MiniEngine
             _externalInitializers.Add(initializerDelegate);
         }
 
-        public static void AddReleaser(Func<bool> releaserDelegate)
+        public void AddInitializer(Action initializerDelegate)
+        {
+            if (!_canAddInitializers)
+            {
+                LoggingService.Error("Cannot add initializer delegate. Engine is already initializing!");
+                return;
+            }
+            _externalInitializers.Add(() =>
+            {
+                initializerDelegate();
+
+                return false;
+            });
+        }
+
+        public void AddReleaser(Func<bool> releaserDelegate)
         {
             if (!_canAddReleasers)
             {
@@ -204,7 +329,7 @@ namespace MiniEngine
             _externalReleasers.Add(releaserDelegate);
         }
 
-        public static bool Run()
+        public bool Run()
         {
             _canAddInitializers = false;
             if (InitializeSDL())
@@ -214,19 +339,23 @@ namespace MiniEngine
             }
             IsRunning = true;
 
-            var initialWindowTitle = _setup.InitialWindowTitle ?? "MiniEngine Game Window";
-            WindowManager.CreateWindow(initialWindowTitle);
+            if (_setup.DisableCursor == true)
+                _ = SDL_ShowCursor(SDL_DISABLE);
             if (Initialize() || InitializeExternal())
             {
                 LoggingService.Fatal("GameEngine could not be initialized.");
                 return true;
             }
+            var initialWindowTitle = _setup.InitialWindowTitle ?? "MiniEngine Game Window";
+            WindowManager.CreateWindow(initialWindowTitle);
 
             while (IsRunning)
             {
-                WindowManager.PumpEvents();
+                Graphics.Tidy();
                 InputManager.UpdateState();
-                SystemManager.ProcessSystems();
+                WindowManager.PumpEvents();
+                EcsManager.ProcessSystems();
+                TaskScheduler.UpdateAndExecute();
 
                 if (!_requestedHalt)
                     continue;

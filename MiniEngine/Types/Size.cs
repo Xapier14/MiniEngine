@@ -4,7 +4,13 @@ using System.Text.RegularExpressions;
 
 namespace MiniEngine;
 
-public struct Size : IEquatable<Size>, IEquatable<SizeF>, IParsable<Size>
+public interface IReadOnlySize
+{
+    public int Width { get; }
+    public int Height { get; }
+}
+
+public struct Size : IReadOnlySize, IEquatable<Size>, IEquatable<SizeF>, IParsable<Size>
 {
     public int Width { get; set; }
     public int Height { get; set; }

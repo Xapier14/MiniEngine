@@ -40,17 +40,20 @@ namespace MiniEngine.Utility
             var typeName = type.Namespace != null
                 ? $"{type.Namespace}.{type.Name}"
                 : type.Name;
-            typeName = RemoveNullableType(typeName);
+            RemoveNullableType(ref typeName);
             var isParsableGeneric = type.GetInterfaces().Any(i => 
                 i.IsOfGenericType(typeof(IParsable<>)));
             if (isParsableGeneric)
             {
                 try
                 {
-                    var tryParse = type.GetMethod("Parse");
+                    var tryParse = type.GetMethod("Parse", [ typeof(string) ]) ?? type.GetMethod("Parse", [typeof(string), typeof(IFormatProvider)]);
+                    var parameters = tryParse?.GetParameters();
                     if (tryParse != null)
                     {
-                        var parsed = tryParse.Invoke(null, new object?[] { value, null });
+                        var parsed = tryParse.Invoke(null, parameters?.Length > 1
+                            ? [value, null]
+                            : [value]);
                         if (parsed != null)
                         {
                             LoggingService.Debug("[TypeResolver] Parsed via IParsable<>. Type: {0}, Value: {1}",
@@ -66,50 +69,10 @@ namespace MiniEngine.Utility
             }
             switch (typeName)
             {
-                case "System.Single":
-                    return float.Parse(value);
-                case "System.Double":
-                    return double.Parse(value);
-                case "System.Byte":
-                    return byte.Parse(value);
-                case "System.Int16":
-                    return short.Parse(value);
-                case "System.UInt16":
-                    return ushort.Parse(value);
-                case "System.Int32":
-                    return int.Parse(value);
-                case "System.UInt32":
-                    return uint.Parse(value);
-                case "System.Int64":
-                    return long.Parse(value);
-                case "System.UInt64":
-                    return ulong.Parse(value);
-                case "System.Int128":
-                    return Int128.Parse(value);
-                case "System.UInt128":
-                    return UInt128.Parse(value);
-                case "System.Boolean":
-                    return bool.Parse(value);
-                case "System.Char":
-                    return char.Parse(value);
-                case "System.String":
-                    return value;
                 case "System.Object":
                     return value;
                 case "MiniEngine.MemoryResource":
                     return Resources.GetResource(value);
-                case "MiniEngine.Vector2":
-                    value = value.Trim('(', ')');
-                    var vec2 = value.Split(',', StringSplitOptions.TrimEntries);
-                    return new Vector2(int.Parse(vec2[0]), int.Parse(vec2[1]));
-                case "MiniEngine.Vector2F":
-                    value = value.Trim('(', ')');
-                    var vec2F = value.Split(',', StringSplitOptions.TrimEntries);
-                    return new Vector2F(float.Parse(vec2F[0]), float.Parse(vec2F[1]));
-                case "MiniEngine.Size":
-                    value = value.Trim('(', ')');
-                    var size = value.Split(',', StringSplitOptions.TrimEntries);
-                    return new Size(int.Parse(size[0]), int.Parse(size[1]));
             }
 
             return _additionalParsers.TryGetValue(typeName, out var parser)
@@ -131,10 +94,10 @@ namespace MiniEngine.Utility
         public static void AddParser(string typeName, Func<string, object> parserFunc)
             => _additionalParsers.Add(typeName, parserFunc);
 
-        private static string RemoveNullableType(string nullableTypeString)
+        private static void RemoveNullableType(ref string nullableTypeString)
         {
             var match = NullableRegex().Match(nullableTypeString);
-            return match.Success ? match.Groups[1].Value : nullableTypeString;
+            nullableTypeString = match.Success ? match.Groups[1].Value : nullableTypeString;
         }
 
         private static IEnumerable<Type> GetLoadableTypes(Assembly assembly, bool noCache = false)
@@ -146,7 +109,7 @@ namespace MiniEngine.Utility
             return exportedTypes;
         }
 
-        [GeneratedRegex("^System.Nullable`1\\[\\[(.+), (.+), (.+), (.+), (.+)\\]\\]$")]
+        [GeneratedRegex("^System\\.Nullable`1\\[\\[(.+), (.+), (.+), (.+), (.+)\\]\\]$")]
         private static partial Regex NullableRegex();
     }
 }

@@ -33,5 +33,10 @@ namespace MiniEngine.Utility
         {
             return ConversionF.RadiansToDegrees(MathF.Atan2(point2.Y - point1.Y, point2.X - point1.X));
         }
+
+        public static int Mod(int x, int m)
+        {
+            return (x % m + m) % m;
+        }
     }
 }

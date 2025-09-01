@@ -30,7 +30,6 @@ namespace MiniEngine.Utility
 
         public static void Error(string message, params object[] args)
         {
-
             var now = DateTime.Now;
             _loggers.ForEach(logger => logger.Error(now, string.Format(message, args)));
         }

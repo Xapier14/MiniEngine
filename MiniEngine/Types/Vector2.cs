@@ -4,9 +4,19 @@ using System.Text.RegularExpressions;
 
 namespace MiniEngine;
 
-public struct Vector2 : IEquatable<Vector2>, IEquatable<Vector2F>, IEquatable<(int X, int Y)>, IEquatable<(float X, float Y)>, IParsable<Vector2>
+public interface IReadOnlyVector2
+{
+    public double Magnitude => Math.Sqrt(Math.Pow(X, 2.0) + Math.Pow(Y, 2.0));
+    public double Angle => Conversion.RadiansToDegrees(Math.Atan((double)Y / X));
+    public int X { get; }
+    public int Y { get; }
+}
+
+public struct Vector2 : IReadOnlyVector2, IEquatable<Vector2>, IEquatable<Vector2F>, IEquatable<(int X, int Y)>, IEquatable<(float X, float Y)>, IParsable<Vector2>
 {
     public static Vector2 Zero => new(0, 0);
+    public static Vector2 PositiveInf => new(int.MaxValue, int.MaxValue);
+    public static Vector2 NegativeInf => new(int.MinValue, int.MinValue);
 
     public double Magnitude => Math.Sqrt(Math.Pow(X, 2.0) + Math.Pow(Y, 2.0));
     public double Angle => Conversion.RadiansToDegrees(Math.Atan((double)Y / X));
@@ -72,6 +82,11 @@ public struct Vector2 : IEquatable<Vector2>, IEquatable<Vector2F>, IEquatable<(i
     public static Vector2 From(double degrees = 0.0, double magnitude = 1.0)
     {
         return new Vector2().SetFrom(degrees, magnitude);
+    }
+
+    public static implicit operator Vector2(Vector2F vector2)
+    {
+        return new Vector2((int)vector2.X, (int)vector2.Y);
     }
 
     public static implicit operator Vector2((int x, int y) vector2)

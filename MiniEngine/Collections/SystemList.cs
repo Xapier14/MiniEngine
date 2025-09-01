@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using NotImplementedException = System.NotImplementedException;
 
 namespace MiniEngine.Collections
 {
@@ -149,7 +150,7 @@ namespace MiniEngine.Collections
         }
     }
 
-    public class SystemList : IEnumerable<(System, object?)>, IEnumerable<SystemNode>
+    public class SystemList : IEnumerable<(System, object?)>, IEnumerable<SystemNode>, IEnumerable
     {
         private SystemNode? _head;
 
@@ -242,6 +243,11 @@ namespace MiniEngine.Collections
                 x.Previous = null;
             });
             _head = null;
+        }
+
+        public IEnumerator GetEnumerator()
+        {
+            throw new NotImplementedException();
         }
     }
 }

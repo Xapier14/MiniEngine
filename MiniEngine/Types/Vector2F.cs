@@ -4,9 +4,19 @@ using System.Text.RegularExpressions;
 
 namespace MiniEngine;
 
+public interface IReadOnlyVector2F
+{
+    public float Magnitude => MathF.Sqrt(MathF.Pow(X, 2f) + MathF.Pow(Y, 2f));
+    public float Angle => Magnitude > 0 ? ConversionF.RadiansToDegrees(MathF.Atan2(Y, X)) : 0;
+    public float X { get; }
+    public float Y { get; }
+}
+
 public struct Vector2F : IEquatable<Vector2F>, IEquatable<Vector2>, IEquatable<(int X, int Y)>, IEquatable<(float X, float Y)>, IParsable<Vector2F>
 {
     public static Vector2F Zero => new(0, 0);
+    public static Vector2F PositiveInf => new(float.MaxValue, float.MaxValue);
+    public static Vector2F NegativeInf => new(float.MinValue, float.MinValue);
 
     public float Magnitude => MathF.Sqrt(MathF.Pow(X, 2f) + MathF.Pow(Y, 2f));
     public float Angle => Magnitude > 0 ? ConversionF.RadiansToDegrees(MathF.Atan2(Y, X)) : 0;
@@ -28,22 +38,54 @@ public struct Vector2F : IEquatable<Vector2F>, IEquatable<Vector2>, IEquatable<(
 
     public bool Equals(Vector2 other)
     {
-        return Math.Abs(X - other.X) <= 0.001 && Math.Abs(Y - other.Y) <= 0.001;
+        // both are positive inf
+        if (ApproximatelyEqual(X, float.MaxValue) && ApproximatelyEqual(Y, float.MaxValue)
+            && other is { X: int.MaxValue, Y: int.MaxValue })
+            return true;
+        // both are negative inf
+        if (ApproximatelyEqual(X, float.MinValue) && ApproximatelyEqual(Y, float.MinValue)
+            && other is { X: int.MinValue, Y: int.MinValue })
+            return true;
+        return ApproximatelyEqual(X, other.X) && ApproximatelyEqual(Y, other.Y);
     }
 
     public bool Equals((int X, int Y) other)
     {
-        return Math.Abs(X - other.X) <= 0.001 && Math.Abs(Y - other.Y) <= 0.001;
+        // both are positive inf
+        if (ApproximatelyEqual(X, float.MaxValue) && ApproximatelyEqual(Y, float.MaxValue)
+            && other is { X: int.MaxValue, Y: int.MaxValue })
+            return true;
+        // both are negative inf
+        if (ApproximatelyEqual(X, float.MinValue) && ApproximatelyEqual(Y, float.MinValue)
+            && other is { X: int.MinValue, Y: int.MinValue })
+            return true;
+        return ApproximatelyEqual(X, other.X) && ApproximatelyEqual(Y, other.Y);
     }
 
     public bool Equals((float X, float Y) other)
     {
-        return Math.Abs(X - other.X) <= 0.001 && Math.Abs(Y - other.Y) <= 0.001;
+        // both are positive inf
+        if (ApproximatelyEqual(X, float.MaxValue) && ApproximatelyEqual(Y, float.MaxValue)
+            && ApproximatelyEqual(other.X, float.MaxValue) && ApproximatelyEqual(other.Y, float.MaxValue))
+            return true;
+        // both are negative inf
+        if (ApproximatelyEqual(X, float.MinValue) && ApproximatelyEqual(Y, float.MinValue)
+            && ApproximatelyEqual(other.X, float.MinValue) && ApproximatelyEqual(other.Y, float.MinValue))
+            return true;
+        return ApproximatelyEqual(X, other.X) && ApproximatelyEqual(Y, other.Y);
     }
 
     public bool Equals(Vector2F other)
     {
-        return Math.Abs(X - other.X) <= 0.001 && Math.Abs(Y - other.Y) <= 0.001;
+        // both are positive inf
+        if (ApproximatelyEqual(X, float.MaxValue) && ApproximatelyEqual(Y, float.MaxValue)
+            && ApproximatelyEqual(other.X, float.MaxValue) && ApproximatelyEqual(other.Y, float.MaxValue))
+            return true;
+        // both are negative inf
+        if (ApproximatelyEqual(X, float.MinValue) && ApproximatelyEqual(Y, float.MinValue)
+            && ApproximatelyEqual(other.X, float.MinValue) && ApproximatelyEqual(other.Y, float.MinValue))
+            return true;
+        return ApproximatelyEqual(X, other.X) && ApproximatelyEqual(Y, other.Y);
     }
 
     public Vector2 Denormalize(Vector2 range)
@@ -102,10 +144,16 @@ public struct Vector2F : IEquatable<Vector2F>, IEquatable<Vector2>, IEquatable<(
         return new Vector2F(Math.Clamp(value.X, min, max), Math.Clamp(value.Y, min, max));
     }
 
+    public static Vector2F Clamp(Vector2F value, float max)
+        => Clamp(value, float.MinValue, max);
+
     public static Vector2F Clamp(Vector2F value, Vector2F min, Vector2F max)
     {
         return new Vector2F(Math.Clamp(value.X, min.X, max.X), Math.Clamp(value.Y, min.Y, max.Y));
     }
+
+    public static Vector2F Clamp(Vector2F value, Vector2F max)
+        => Clamp(value, NegativeInf, max);
 
     public static Vector2F From(float degrees = 0.0f, float magnitude = 1.0f)
     {
@@ -162,6 +210,11 @@ public struct Vector2F : IEquatable<Vector2F>, IEquatable<Vector2>, IEquatable<(
         return new Vector2F(left.X / right.X, left.Y / right.Y);
     }
 
+    public static Vector2F operator /(Vector2F left, float right)
+    {
+        return new Vector2F(left.X / right, left.Y / right);
+    }
+
     public static Vector2F operator *(Vector2F left, float right)
     {
         return new Vector2F(left.X * right, left.Y * right);
@@ -190,7 +243,7 @@ public struct Vector2F : IEquatable<Vector2F>, IEquatable<Vector2>, IEquatable<(
     {
         size = new Vector2F();
         var pattern = Regex.Match(tupleString.Trim('(', ')'),
-            @"^(\d+(?:\.\d+)?),\s?(\d+(?:\.\d+)?)$", RegexOptions.IgnoreCase);
+            @"^(\-?\d+(?:\.\d+)?),\s?(\-?\d+(?:\.\d+)?)$", RegexOptions.IgnoreCase);
         if (pattern.Success)
         {
             size.X = float.Parse(pattern.Groups[1].Value);
@@ -200,4 +253,7 @@ public struct Vector2F : IEquatable<Vector2F>, IEquatable<Vector2>, IEquatable<(
 
         return false;
     }
+
+    private static bool ApproximatelyEqual(float x, float y, float threshold = 0.001f)
+        => Math.Abs(x - y) <= threshold;
 }

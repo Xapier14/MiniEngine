@@ -24,6 +24,7 @@ namespace MiniEngine
         public static Color Orange { get; } = new(255, 160, 16);
         public static Color Brown { get; } = new(160, 128, 96);
         public static Color Tan { get; } = new(255, 208, 160);
+        public static Color Transparent { get; } = new(255, 255, 255, 0);
 
         public byte R { get; set; }
         public byte G { get; set; }

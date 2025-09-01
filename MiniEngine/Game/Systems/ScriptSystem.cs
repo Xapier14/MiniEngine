@@ -3,7 +3,7 @@ using MiniEngine.Utility;
 
 namespace MiniEngine
 {
-    [HandlesComponent<Script>]
+    [HandlesComponent<Scriptable>]
     public class ScriptSystem : System
     {
         public ScriptSystem()
@@ -11,36 +11,36 @@ namespace MiniEngine
             LoggingService.Debug("Script system initialized.");
         }
 
-        public static void OnComponentRegister(Script scriptComponent)
+        public void OnComponentRegister(Scriptable scriptableComponent)
         {
-            scriptComponent.Create?.Invoke(scriptComponent);
+            scriptableComponent.Create?.Invoke(scriptableComponent);
         }
 
-        public static void OnComponentRemove(Script scriptComponent)
+        public void OnComponentRemove(Scriptable scriptableComponent)
         {
-            scriptComponent.Destroy?.Invoke(scriptComponent);
+            scriptableComponent.Destroy?.Invoke(scriptableComponent);
         }
 
-        public void HandleComponent(Script scriptComponent, object type)
+        public void HandleComponent(Scriptable scriptableComponent, object type)
         {
             var eventType = (ScriptEvent)type;
-            scriptComponent.Delta = DeltaTime;
+            scriptableComponent.Delta = DeltaTime;
             switch (eventType)
             {
                 case ScriptEvent.BeforeUpdate:
-                    scriptComponent.BeforeUpdate?.Invoke(scriptComponent);
+                    scriptableComponent.BeforeUpdate?.Invoke(scriptableComponent);
                     break;
                 case ScriptEvent.Update:
-                    scriptComponent.Update?.Invoke(scriptComponent);
+                    scriptableComponent.Update?.Invoke(scriptableComponent);
                     break;
                 case ScriptEvent.AfterUpdate:
-                    scriptComponent.AfterUpdate?.Invoke(scriptComponent);
+                    scriptableComponent.AfterUpdate?.Invoke(scriptableComponent);
                     break;
                 case ScriptEvent.BeforeDraw:
-                    scriptComponent.BeforeDraw?.Invoke(scriptComponent);
+                    scriptableComponent.BeforeDraw?.Invoke(scriptableComponent);
                     break;
                 case ScriptEvent.AfterDraw:
-                    scriptComponent.AfterDraw?.Invoke(scriptComponent);
+                    scriptableComponent.AfterDraw?.Invoke(scriptableComponent);
                     break;
                 default:
                     return;
