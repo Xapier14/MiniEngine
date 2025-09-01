@@ -1,28 +1,58 @@
 # MiniEngine
 A full-fledged cross-platform 2D Game Engine.
 
-## Getting Started
+## Setting up a MiniEngine project
+1. Install the `metool` command-line tool.
 1. Reference the Project/Assembly.
+1. Get an instance of the GameEngine.
+   ```csharp
+   var gameEngine = GameContext.GetGameEngine();
+   ```
 1. Create an initializer to load initial and additional game assets.
    ```csharp
-   GameEngine.AddInitializer(() =>
+   var gameEngine = GameContext.GetGameEngine();
+   gameEngine.AddInitializer(() =>
    {
        // do stuff
 
        return false; // return true if error occured in initializer.
    });
    ```
-1. Start the engine by calling `GameEngine.Run()`.
+1. Initialize the engine by calling `gameEngine.Initialize()` then start it by calling `gameEngine.Run()`.
    ```csharp
-   GameEngine.AddInitializer(() =>
+   var gameEngine = GameContext.GetGameEngine();
+   gameEngine.AddInitializer(() =>
    {
        // do stuff
 
        return false; // return true if error occured in initializer.
    });
-   GameEngine.Run();
+   gameEngine.Initialize()
+   gameEngine.Run();
    ```
+1. Create a `./Assets/.indexfile` in the root directory.\
+   This file will be used for defining asset folders that will be referenced by the game.
+   ```
+   Audio
+   Sprites
+   Scenes
+   ```
+   Will mark the folders `./Assets/Audio`, `./Assets/Sprites`, and `./Assets/Scenes` as game assets.
+1. Run the `metool pack` command on the `./Assets` directory.
+   ```shell
+   metool pack ./Assets
+   ```
+   This will produce a `Assets.mea` file that contains the assets specified by your `.indexfile`.
+1. Run `dotnet run` to run the project.
 
+## Basic Architecture
+MiniEngine uses a simple ECS architecture.\
+Game objects are usually defined as an `Entity` that may contain one or many `Component`.
+Both of these objects/classes are ideally data-only. Behavior and logic are done by a `System` that act on its corresponding `Component`.
+
+These Entities are then contained in a Scene.\
+Scenes are functionally equivalent to a game world or room.\
+You can switch scenes as needed for switching between levels or ui screens.
 ## Using game assets
 MiniEngine supports the use of a packed asset file that acts as a read-only virtual file system.
 1. Build and install the `MiniEngine.Tools.CLI` project and install as a dotnet tool.

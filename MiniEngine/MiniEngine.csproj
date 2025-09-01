@@ -15,4 +15,10 @@
     <ProjectReference Include="..\MiniEngine.Tools\MiniEngine.Tools.Compression\MiniEngine.Tools.Compression.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Content Include="..\README.md">
+      <Link>README.md</Link>
+    </Content>
+  </ItemGroup>
+
 </Project>
