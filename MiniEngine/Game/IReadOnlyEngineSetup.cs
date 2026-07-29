@@ -13,5 +13,5 @@ public interface IReadOnlyEngineSetup
     public bool? InvertYAxis { get; }
     public string? InitialWindowTitle { get; }
     public string? AssetsFile { get; }
-    public IDictionary<string, object>? AdditionalConfiguration { get; set; }
+    public IDictionary<string, object>? AdditionalConfiguration { get; }
 }

@@ -73,7 +73,7 @@ namespace MiniEngine
                                 memberType = memberType.GetGenericTypeDefinition();
                             if (memberType == typeof(Nullable<>))
                                 memberType = genericTypeArgs.First();
-                            var value = TypeResolver.AutoParse(attribute.Value, memberType);
+                            var value = TypeResolver.AutoParse(attribute.Value, memberType, scene);
                             if (member.MemberType.HasFlag(MemberTypes.Field))
                             {
                                 var fieldInfo = (FieldInfo)member;
@@ -119,7 +119,7 @@ namespace MiniEngine
                                         entityTypeName);
                                     continue;
                                 }
-                                var value = TypeResolver.AutoParse(attribute.Value, member.GetUnderlyingType()!);
+                                var value = TypeResolver.AutoParse(attribute.Value, member.GetUnderlyingType()!, scene);
                                 if (member.MemberType.HasFlag(MemberTypes.Field))
                                 {
                                     var fieldInfo = (FieldInfo)member;
@@ -150,7 +150,7 @@ namespace MiniEngine
                                 }
 
                                 var value = componentPropertyNode.Value != null
-                                    ? TypeResolver.AutoParse(componentPropertyNode.Value, member.GetUnderlyingType()!)
+                                    ? TypeResolver.AutoParse(componentPropertyNode.Value, member.GetUnderlyingType()!, scene)
                                     : null;
                                 if (value == null)
                                 {
@@ -193,7 +193,7 @@ namespace MiniEngine
                                                 entityTypeName);
                                             continue;
                                         }
-                                        var subValue = TypeResolver.AutoParse(attribute.Value, subMember.GetUnderlyingType()!);
+                                        var subValue = TypeResolver.AutoParse(attribute.Value, subMember.GetUnderlyingType()!, scene);
                                         if (subMember.MemberType.HasFlag(MemberTypes.Field))
                                         {
                                             var fieldInfo = (FieldInfo)subMember;

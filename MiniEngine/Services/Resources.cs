@@ -117,7 +117,7 @@ namespace MiniEngine
         public static string GetFriendlyName(MemoryResource? memoryResource)
         {
             string? friendlyName = null;
-            if (memoryResource != null)
+            if (memoryResource == null)
                 return "null";
             foreach (var (order, absolutePath) in _packPaths)
             {

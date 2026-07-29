@@ -7,7 +7,6 @@ namespace MiniEngine
 {
     public abstract class Entity : IParsable<Entity?>
     {
-        public Scene? ParentScene { get; internal set; }
         private readonly List<Component> _components = new();
         private bool _destroyed;
         private readonly Guid _guid = Guid.NewGuid();
@@ -15,6 +14,18 @@ namespace MiniEngine
         public string Id => $"{GetType()}#{Name ?? _guid.ToString()}";
         public string? Name { get; set; }
         public bool Destroyed => _destroyed;
+
+        /// <summary>
+        /// Whether this entity currently belongs to a scene. A flag rather than a reference
+        /// to the scene, so an entity stays inert data that does not know its container.
+        /// </summary>
+        internal bool IsAttached { get; set; }
+
+        /// <summary>
+        /// Raised by <see cref="Destroy"/> before components are cleared. Whichever scene
+        /// holds this entity listens and removes it.
+        /// </summary>
+        internal event Action<Entity>? Destroying;
 
         internal IReadOnlyList<Component> GetComponents()
             => _components;
@@ -35,10 +46,10 @@ namespace MiniEngine
                     _components.Any() ?
                         string.Join(';', _components.Select(hasComponent => hasComponent.GetType().Name))
                         : "<empty>");
-                GameContext.GetGameEngine().FatalExit(ExitCode.EntityCreationError);
-                return;
+                throw new MissingRequiredComponentException(
+                    $"Cannot add {component.GetType().Name} to {Id}: requires " +
+                    $"{string.Join(", ", requiredComponents.Select(type => type.Name))}.");
             }
-            component.SetOwnerIfNotNull(this);
             _components.Add(component);
         }
 
@@ -90,7 +101,8 @@ namespace MiniEngine
 
         public void Destroy()
         {
-            ParentScene?.RemoveEntity(this);
+            // Raised first: the scene's removal walks GetComponents() to unregister them.
+            Destroying?.Invoke(this);
             _components.Clear();
             _destroyed = true;
         }
@@ -114,13 +126,19 @@ namespace MiniEngine
             return result!;
         }
 
+        /// <summary>
+        /// Resolves an entity by name against the scene supplied through
+        /// <paramref name="provider"/>. <see cref="Scene"/> implements
+        /// <see cref="IFormatProvider"/> for exactly this; a static parse method has no
+        /// instance to reach a world through otherwise.
+        /// </summary>
         public static bool TryParse(string? s, IFormatProvider? provider, out Entity? result)
         {
-            result = null!;
-            if (GameContext.GetGameEngine().SceneManager.CurrentScene == null || s == null)
+            result = null;
+            if (s == null)
                 return false;
-            result = GameContext.GetGameEngine().SceneManager.CurrentScene?.GetEntity(s);
 
+            result = (provider?.GetFormat(typeof(Scene)) as Scene)?.GetEntity(s);
             return result != null;
         }
     }

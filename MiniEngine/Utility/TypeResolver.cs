@@ -32,10 +32,16 @@ namespace MiniEngine.Utility
             return type;
         }
 
-        public static object? AutoParse<T>(string value)
-            => AutoParse(value, typeof(T));
+        public static object? AutoParse<T>(string value, IFormatProvider? provider = null)
+            => AutoParse(value, typeof(T), provider);
 
-        public static object? AutoParse(string value, Type type)
+        /// <summary>
+        /// Parses <paramref name="value"/> into <paramref name="type"/>. The optional
+        /// <paramref name="provider"/> is forwarded to <see cref="IParsable{T}"/>
+        /// implementations that need context to resolve against, such as
+        /// <see cref="Entity"/> resolving a name against the scene being built.
+        /// </summary>
+        public static object? AutoParse(string value, Type type, IFormatProvider? provider = null)
         {
             var typeName = type.Namespace != null
                 ? $"{type.Namespace}.{type.Name}"
@@ -52,7 +58,7 @@ namespace MiniEngine.Utility
                     if (tryParse != null)
                     {
                         var parsed = tryParse.Invoke(null, parameters?.Length > 1
-                            ? [value, null]
+                            ? [value, provider]
                             : [value]);
                         if (parsed != null)
                         {

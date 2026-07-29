@@ -9,21 +9,24 @@ namespace MiniEngine
     {
         public struct MovementVector(Motion MotionComponent, Vector2F MotionVector);
         private readonly List<MovementVector> _movementVectors = [];
+        private readonly IReadOnlyEngineSetup? _setup;
 
-        public PhysicsSystem()
+        /// <summary>
+        /// Headless constructor. Simulation runs at a game speed of 1 with no engine present.
+        /// </summary>
+        public PhysicsSystem() : this(null)
         {
+        }
+
+        public PhysicsSystem(IReadOnlyEngineSetup? setup)
+        {
+            _setup = setup;
             LoggingService.Debug("Physics system initialized");
         }
 
         public void HandleComponent(Motion motionComponent)
         {
-            var delta = GameContext.GetGameEngine().Setup.GameSpeed.GetValueOrDefault(1f) * DeltaTimeF;
-
-            var entity = motionComponent.Owner;
-            if (entity is null)
-                return;
-            var colliders = entity.GetComponents<ICollider>();
-            var behavior = entity.TryGetComponent<PhysicsBehavior>();
+            var delta = (_setup?.GameSpeed).GetValueOrDefault(1f) * DeltaTimeF;
 
             var acceleration = motionComponent.Acceleration;
             motionComponent.Velocity += acceleration * delta;

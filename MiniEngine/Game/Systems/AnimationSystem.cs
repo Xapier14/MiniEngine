@@ -55,8 +55,7 @@ namespace MiniEngine
 
         public void HandleComponent(Animator animator)
         {
-            var entity = animator.Owner!;
-            var drawableComponent = entity.TryGetComponent<Drawable>();
+            var drawableComponent = Ecs.GetSibling<Drawable>(animator);
             if (drawableComponent == null) return;
 
             if (!_states.TryGetValue(animator, out var state))

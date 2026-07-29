@@ -1,6 +1,5 @@
 ﻿using MiniEngine.Utility;
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -14,11 +13,21 @@ namespace MiniEngine
         public double DeltaTime { get; private set; }
         public float DeltaTimeF => (float)DeltaTime;
 
+        /// <summary>
+        /// The manager this system is registered with. Assigned by <see cref="Attach"/>
+        /// during registration, so it is not available in a system's constructor.
+        /// </summary>
+        public EcsManager Ecs { get; private set; } = null!;
+
         protected virtual void BeforeStep(object? arg) { }
         protected virtual void Step(object? arg) { }
         protected virtual void AfterStep(object? arg) { }
 
-        internal static readonly ConcurrentBag<Component> ComponentDiff = new();
+        internal void Attach(EcsManager ecs)
+        {
+            Ecs = ecs;
+            PreCacheHandlers();
+        }
 
         internal void PreCacheHandlers()
         {

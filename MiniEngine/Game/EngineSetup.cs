@@ -2,7 +2,7 @@
 
 namespace MiniEngine;
 
-public struct EngineSetup : IReadOnlyEngineSetup
+public class EngineSetup : IReadOnlyEngineSetup
 {
     public static EngineSetup Default => new()
     {

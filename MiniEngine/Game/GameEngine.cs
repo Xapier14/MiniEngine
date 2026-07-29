@@ -15,6 +15,7 @@ namespace MiniEngine
     {
         private bool _isInitialized;
         private bool _isReleased;
+        private bool _sdlInitialized;
         private bool _canAddInitializers = true;
         private bool _canAddReleasers = true;
         private bool _requestedHalt;
@@ -120,6 +121,14 @@ namespace MiniEngine
 
             DllMap.RegisterDllMap();
 
+            // AudioService.InitializeDevice below calls into SDL_mixer, so SDL must already
+            // be up regardless of whether Initialize() was reached via Run() or called directly.
+            if (InitializeSDL())
+            {
+                LoggingService.Fatal("GameEngine could not be initialized (SDL initialization error).");
+                return true;
+            }
+
             TaskScheduler = new TaskScheduler();
             EcsManager = new EcsManager();
             AudioService = new AudioService(TaskScheduler);
@@ -130,7 +139,7 @@ namespace MiniEngine
 
             _initializers.AddRange([
                 AudioService.InitializeDevice,
-                EcsManager.InitializeWithDefaultSystems,
+                InitializeDefaultSystems,
                 InitializeGameAssets
             ]);
 
@@ -175,26 +184,81 @@ namespace MiniEngine
         {
             if (_isReleased)
                 return false;
-            var coreReleasersResult = _releasers.Any(releaser => releaser());
-            if (coreReleasersResult)
-            {
-                LoggingService.Fatal("An internal releaser returned an error!");
-                return true;
-            }
 
-            if (!_externalReleasers.Any())
+            // SDL teardown runs in the finally so a failing releaser cannot leak this
+            // engine's reference to the process-wide SDL init.
+            try
+            {
+                var coreReleasersResult = _releasers.Any(releaser => releaser());
+                if (coreReleasersResult)
+                {
+                    LoggingService.Fatal("An internal releaser returned an error!");
+                    return true;
+                }
+
+                if (!_externalReleasers.Any())
+                    return false;
+
+                LoggingService.Debug("{0} external releaser delegate(s) queued.", _externalReleasers.Count);
+                return _externalReleasers.Any(releaser => releaser());
+            }
+            finally
             {
                 _isReleased = true;
-                return false;
+                ReleaseSDL();
             }
-
-            LoggingService.Debug("{0} external releaser delegate(s) queued.", _externalReleasers.Count);
-            var externalReleasersResult = _externalReleasers.Any(releaser => releaser());
-            _isReleased = true;
-            return externalReleasersResult;
         }
 
+        // SDL's init/quit calls are process-global, so several engine instances in one
+        // process have to share them. First one in initialises, last one out tears down.
+        private static readonly object _sdlLock = new();
+        private static int _sdlRefCount;
+
         private bool InitializeSDL()
+        {
+            if (_sdlInitialized)
+                return false;
+
+            lock (_sdlLock)
+            {
+                if (_sdlRefCount > 0)
+                {
+                    _sdlRefCount++;
+                    _sdlInitialized = true;
+                    return false;
+                }
+
+                if (InitializeSDLSubsystems())
+                    return true;
+
+                _sdlRefCount++;
+                _sdlInitialized = true;
+                return false;
+            }
+        }
+
+        private void ReleaseSDL()
+        {
+            if (!_sdlInitialized)
+                return;
+            _sdlInitialized = false;
+
+            lock (_sdlLock)
+            {
+                _sdlRefCount--;
+                if (_sdlRefCount > 0)
+                    return;
+
+                Mix_CloseAudio();
+                Mix_Quit();
+                TTF_Quit();
+                IMG_Quit();
+                SDL_Quit();
+                LoggingService.Info("Released SDL2.");
+            }
+        }
+
+        private bool InitializeSDLSubsystems()
         {
             if (SDL_Init(SDL_INIT_EVERYTHING) != 0)
             {
@@ -229,6 +293,36 @@ namespace MiniEngine
             return false;
         }
 
+        /// <summary>
+        /// Builds the engine's default system pipeline. Systems needing engine services are
+        /// constructed here and registered by instance; the rest the ECS can build itself.
+        /// </summary>
+        private bool InitializeDefaultSystems()
+        {
+            try
+            {
+                LoggingService.Debug("Initializing default ECS systems...");
+                EcsManager.Reset();
+
+                EcsManager.RegisterAfter<MiniEngine.System>(typeof(ScriptSystem), ScriptEvent.BeforeUpdate);
+                EcsManager.RegisterAfter<ScriptSystem>(ScriptEvent.BeforeUpdate, typeof(ScriptSystem), ScriptEvent.Update);
+                EcsManager.RegisterAfter<ScriptSystem>(ScriptEvent.Update, typeof(ScriptSystem), ScriptEvent.AfterUpdate);
+                EcsManager.RegisterAfter<ScriptSystem>(new PhysicsSystem(Setup));
+                EcsManager.RegisterAfter<PhysicsSystem>(typeof(AnimationSystem));
+                EcsManager.RegisterAfter<AnimationSystem>(typeof(ScriptSystem), ScriptEvent.BeforeDraw);
+                EcsManager.RegisterAfter<ScriptSystem>(new DrawSystem(this));
+                EcsManager.RegisterAfter<DrawSystem>(ScriptEvent.BeforeDraw, typeof(ScriptSystem), ScriptEvent.AfterDraw);
+                LoggingService.Debug("All default ECS OK.");
+            }
+            catch (Exception ex)
+            {
+                LoggingService.Fatal("Couldn't initialize default ECS systems.", ex);
+                return true;
+            }
+
+            return false;
+        }
+
         private bool InitializeGameAssets()
         {
             if (Setup.AssetsFile != null)
@@ -256,12 +350,20 @@ namespace MiniEngine
                 FatalExit(-1);
         }
 
+        /// <summary>
+        /// Stops and releases this engine, then throws. Does not end the process: another
+        /// engine instance, or a host application such as an editor, may still be running.
+        /// Catch <see cref="EngineFatalException"/> at your entry point if you want the
+        /// process to exit.
+        /// </summary>
+        /// <exception cref="EngineFatalException">Always.</exception>
         public void FatalExit(int exitCode)
         {
-            LoggingService.Fatal("GameEngine has run into a fatal error and will forcibly exit.");
-            if (exitCode == 0)
-                GracefulExit();
-            Environment.Exit(exitCode);
+            LoggingService.Fatal("GameEngine has run into a fatal error and will shut down.");
+            IsRunning = false;
+            _canAddReleasers = false;
+            Release();
+            throw new EngineFatalException($"GameEngine exited with code {exitCode}.", exitCode);
         }
 
         public void FatalExit(ExitCode exitCode)

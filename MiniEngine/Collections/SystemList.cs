@@ -1,7 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using NotImplementedException = System.NotImplementedException;
 
 namespace MiniEngine.Collections
 {
@@ -12,34 +11,6 @@ namespace MiniEngine.Collections
 
         public System? Value { get; set; }
         public object? Argument { get; set; }
-
-        public void InsertBefore(SystemNode node)
-        {
-            var prev = Previous;
-            if (prev == null)
-            {
-                Previous = node;
-                return;
-            }
-
-            prev.Next = node;
-            node.Previous = prev;
-            node.Next = this;
-            Previous = node;
-        }
-
-        public void InsertAfter(SystemNode node)
-        {
-            var next = Next;
-            if (next != null)
-            {
-                next.Previous = node;
-                node.Next = next;
-            }
-            node.Previous = this;
-            Next = node;
-
-        }
 
         public static implicit operator (System, object?)(SystemNode node) => (node.Value!, node.Argument);
     }
@@ -67,6 +38,8 @@ namespace MiniEngine.Collections
                 case { Next: null }:
                     return false;
                 case null:
+                    if (Head == null)
+                        return false;
                     Current = Head;
                     return true;
                 default:
@@ -171,13 +144,22 @@ namespace MiniEngine.Collections
 
         public bool ContainsSystemType<T>() where T : System
         {
-            return FindSystemBySystemType<T>() != null;
+            // Must go through the node finder: SystemNode is a reference type, so its
+            // FirstOrDefault genuinely yields null when there is no match. The tuple
+            // sequence below cannot express "not found" that way.
+            return FindFirstSystemNodeBySystemType<T>() != null;
         }
 
         public (System, object?)? FindSystemBySystemType<T>(object? data = null) where T : System
         {
             var type = typeof(T);
-            return this.FirstOrDefault<(System, object?)>(system => system.GetType() == type && system.Item2 == data);
+            foreach (var node in (IEnumerable<SystemNode>)this)
+            {
+                if (node.Value?.GetType() == type && node.Argument == data)
+                    return (node.Value, node.Argument);
+            }
+
+            return null;
         }
 
         public SystemNode? FindFirstSystemNodeBySystemType<T>(object? data = null) where T : System
@@ -229,6 +211,35 @@ namespace MiniEngine.Collections
             lastNode.Next = newNode;
         }
 
+        /// <summary>
+        /// Links <paramref name="node"/> immediately before <paramref name="target"/>,
+        /// promoting it to head when <paramref name="target"/> is the current head.
+        /// </summary>
+        public void InsertBefore(SystemNode target, SystemNode node)
+        {
+            var previous = target.Previous;
+            node.Previous = previous;
+            node.Next = target;
+            target.Previous = node;
+            if (previous == null)
+                _head = node;
+            else
+                previous.Next = node;
+        }
+
+        /// <summary>
+        /// Links <paramref name="node"/> immediately after <paramref name="target"/>.
+        /// </summary>
+        public void InsertAfter(SystemNode target, SystemNode node)
+        {
+            var next = target.Next;
+            node.Previous = target;
+            node.Next = next;
+            target.Next = node;
+            if (next != null)
+                next.Previous = node;
+        }
+
         private List<SystemNode> ToNodeList()
         {
             return ((IEnumerable<SystemNode>)this).ToList();
@@ -247,7 +258,7 @@ namespace MiniEngine.Collections
 
         public IEnumerator GetEnumerator()
         {
-            throw new NotImplementedException();
+            return new SystemListNodeEnumerator(_head);
         }
     }
 }

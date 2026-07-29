@@ -32,20 +32,6 @@ namespace MiniEngine
 
         private GameWindow? _gameWindow => gameEngine.WindowManager.GameWindow;
 
-        private void AutoCorrectVector(ref Vector2 vector)
-        {
-            if (gameEngine.Setup.InvertYAxis != true)
-                return;
-            vector.Y = _gameWindow?.WindowSize.Height ?? 0 - vector.Y;
-        }
-
-        private void AutoCorrectVector(ref Vector2F vector)
-        {
-            if (gameEngine.Setup.InvertYAxis != true)
-                return;
-            vector.Y = _gameWindow?.WindowSize.Height ?? 0f - vector.Y;
-        }
-
         internal void UpdateState()
         {
             UpdateMouseState();

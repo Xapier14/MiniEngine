@@ -8,9 +8,9 @@ using MiniEngine.Windowing;
 namespace MiniEngine
 {
     [HandlesComponent<Components.Drawable>]
-    public class DrawSystem : System
+    public class DrawSystem(GameEngine gameEngine) : System
     {
-        private readonly GameEngine _gameEngine;
+        private readonly GameEngine _gameEngine = gameEngine;
 
         private readonly
             PriorityQueue<(Sprite? Sprite, Vector2F Position, Size Size, float ImageAngle, Vector2F Center, (bool X, bool Y) Flip), int>
@@ -22,20 +22,13 @@ namespace MiniEngine
 
         public double Fps => 1.0 / DeltaTime;
 
-        public DrawSystem()
-        {
-            _gameEngine = GameContext.GetGameEngine();
-            LoggingService.Debug("Drawable system initialized");
-        }
-
         public void HandleComponent(Drawable drawableComponent)
         {
             if (!drawableComponent.DisableManagedDraw)
             {
                 var window = _gameEngine.WindowManager.GameWindow!;
-                var entity = drawableComponent.Owner!;
-                var scene = entity.ParentScene;
-                var transformComponent = entity.GetComponent<Transform>();
+                var scene = Ecs.ActiveScene;
+                var transformComponent = Ecs.GetSibling<Transform>(drawableComponent)!;
                 var cameraHalfWidth = window.WindowSize.Width / 2f;
                 var cameraHalfHeight = window.WindowSize.Height / 2f;
                 var cameraOrigin = scene?.FollowEntity?.GetComponent<Transform>().Translate ?? scene?.ViewPosition ?? (0, 0);
@@ -81,7 +74,7 @@ namespace MiniEngine
 
         protected override void AfterStep(object? arg)
         {
-            var newColor = _gameEngine.SceneManager.CurrentScene?.BackgroundColor ?? Color.Black;
+            var newColor = Ecs.ActiveScene?.BackgroundColor ?? Color.Black;
             var oldColor = _gameEngine.Graphics.GetDrawColor();
             _gameEngine.Graphics.SetDrawColor(newColor);
             _gameEngine.Graphics.RenderClear();

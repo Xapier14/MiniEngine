@@ -11,16 +11,32 @@ namespace MiniEngine
             get => _currentScene;
             set
             {
+                if (_currentScene != null)
+                {
+                    _currentScene.EntityAdded -= OnEntityAdded;
+                    _currentScene.EntityRemoved -= OnEntityRemoved;
+                }
+
                 _currentScene = value;
+                ecsManager.ActiveScene = value;
                 ecsManager.PurgeComponents();
                 if (_currentScene == null)
                     return;
+
+                _currentScene.EntityAdded += OnEntityAdded;
+                _currentScene.EntityRemoved += OnEntityRemoved;
                 foreach (var entity in _currentScene)
                 {
                     ecsManager.RegisterEntity(entity);
                 }
             }
         }
+
+        private void OnEntityAdded(Entity entity)
+            => ecsManager.RegisterEntity(entity);
+
+        private void OnEntityRemoved(Entity entity)
+            => ecsManager.RemoveEntity(entity);
 
         public Scene BuildScene(MemoryResource xmlMemoryResource)
         {
