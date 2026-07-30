@@ -314,7 +314,9 @@ namespace MiniEngine
                 EcsManager.RegisterAfter<ScriptSystem>(ScriptEvent.BeforeUpdate, typeof(ScriptSystem), ScriptEvent.Update, Cadence.Fixed);
                 EcsManager.RegisterAfter<ScriptSystem>(ScriptEvent.Update, typeof(ScriptSystem), ScriptEvent.AfterUpdate, Cadence.Fixed);
                 EcsManager.RegisterAfter<ScriptSystem>(new PhysicsSystem(Setup), null, Cadence.Fixed);
-                EcsManager.RegisterAfter<PhysicsSystem>(typeof(AnimationSystem));
+                // After physics, because it resolves the positions physics just wrote.
+                EcsManager.RegisterAfter<PhysicsSystem>(typeof(CollisionSystem), null, Cadence.Fixed);
+                EcsManager.RegisterAfter<CollisionSystem>(typeof(AnimationSystem));
                 EcsManager.RegisterAfter<AnimationSystem>(typeof(ScriptSystem), ScriptEvent.BeforeDraw);
                 EcsManager.RegisterAfter<ScriptSystem>(new DrawSystem(this));
                 EcsManager.RegisterAfter<DrawSystem>(ScriptEvent.BeforeDraw, typeof(ScriptSystem), ScriptEvent.AfterDraw);

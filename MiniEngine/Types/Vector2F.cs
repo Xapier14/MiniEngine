@@ -98,6 +98,23 @@ public struct Vector2F : IEquatable<Vector2F>, IEquatable<Vector2>, IEquatable<(
         return new Vector2(x, y);
     }
 
+    /// <summary>
+    /// Scalar product. Projects one vector onto another: positive when they point the same
+    /// way, negative when opposed, zero when perpendicular.
+    /// </summary>
+    public float Dot(Vector2F other)
+        => X * other.X + Y * other.Y;
+
+    /// <summary>
+    /// The same direction with a magnitude of one, or <see cref="Zero"/> if there is no
+    /// direction to preserve.
+    /// </summary>
+    public Vector2F Normalized()
+    {
+        var magnitude = Magnitude;
+        return magnitude > 0f ? new Vector2F(X / magnitude, Y / magnitude) : Zero;
+    }
+
     public Vector2F Set(float x, float y)
     {
         X = x;

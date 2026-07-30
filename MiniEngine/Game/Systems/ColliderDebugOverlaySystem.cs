@@ -38,9 +38,8 @@ namespace MiniEngine
             var viewportOffset = (_gameWindow!.WindowSize.Width / 2f, _gameWindow!.WindowSize.Height / 2f)
                 - viewPosition;
 
-            var topLeft = (transform.Translate.X - boxCollider.Left, transform.Translate.Y - boxCollider.Top) + viewportOffset;
-            var bottomRight = (transform.Translate.X + boxCollider.Right, transform.Translate.Y + boxCollider.Bottom) + viewportOffset;
-            gameEngine.Graphics.DrawRectangle(topLeft, bottomRight, Color.Blue, null);
+            var (min, max) = boxCollider.Bounds(transform.Translate);
+            gameEngine.Graphics.DrawRectangle(min + viewportOffset, max + viewportOffset, Color.Blue, null);
         }
     }
 }

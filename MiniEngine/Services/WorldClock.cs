@@ -62,6 +62,13 @@ namespace MiniEngine
         /// </summary>
         public float Alpha => (float)Math.Clamp(_accumulator / FixedDelta, 0.0, 1.0);
 
+        /// <summary>
+        /// Fixed steps taken during the last frame. Sitting at
+        /// <see cref="MaxStepsPerFrame"/> means the world is not keeping up and is running
+        /// slower than real time, which is otherwise hard to tell from a low frame rate.
+        /// </summary>
+        public int StepsLastFrame { get; private set; }
+
         /// <param name="fixedDelta">Seconds per simulation step. Defaults to 30 steps/second.</param>
         /// <param name="maxStepsPerFrame">Catch-up limit for a single frame.</param>
         /// <param name="timeSource">
@@ -96,6 +103,7 @@ namespace MiniEngine
         public void BeginFrame()
         {
             var now = _timeSource();
+            StepsLastFrame = _stepsThisFrame;
             _stepsThisFrame = 0;
 
             if (!_started)
