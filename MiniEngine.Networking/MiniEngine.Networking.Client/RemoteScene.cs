@@ -7,13 +7,9 @@
             GetEntity("ClientEntity")!.GetComponent<ClientStateController>()!;
         public RemoteScene()
         {
-            var clientEntity = EntityFactory.TryCreateEntity<ClientEntity>();
-            if (clientEntity == null)
-            {
-                GameContext.GameEngine?.FatalExit(-1);
-                return;
-            }
-            AddEntity(clientEntity, GameContext.GameEngine);
+            var clientEntity = EntityFactory.TryCreateEntity<ClientEntity>()
+                ?? throw new EntityCreationFailException("Failed creating instance of entity ClientEntity.");
+            AddEntity(clientEntity);
         }
     }
 }

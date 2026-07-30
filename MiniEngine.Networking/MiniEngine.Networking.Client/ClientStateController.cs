@@ -52,5 +52,17 @@
                 new ClientSyncSystem.ClientSyncTask(ClientSyncSystem.Task.Ping)
             );
         }
+
+        public void Send(object message)
+        {
+            Tasks.Enqueue(
+                new ClientSyncSystem.ClientSyncTask(ClientSyncSystem.Task.Send,
+                    new Dictionary<string, object>
+                    {
+                        ["message"] = message,
+                    }
+                )
+            );
+        }
     }
 }

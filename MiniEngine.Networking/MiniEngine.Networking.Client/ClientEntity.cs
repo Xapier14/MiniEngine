@@ -8,11 +8,13 @@ namespace MiniEngine.Networking.Client;
 public class ClientEntity : Entity
 {
     private Timer _timer = new Timer(1000);
-    
+    private readonly ClientStateController _clientStateController;
+
     [Inject]
     public ClientEntity(ClientStateController clientStateController, Scriptable scriptable)
     {
         Name = "ClientEntity";
+        _clientStateController = clientStateController;
         scriptable.Update += Update;
         AddComponent(scriptable);
         AddComponent(clientStateController);
@@ -22,9 +24,8 @@ public class ClientEntity : Entity
     {
         if (_timer.UpdateAndCheckElapsed())
         {
-            LoggingService.Info("Simulating server send...");
-            var strategy = GameContext.GameEngine!.Setup.AdditionalConfiguration!["connection_strategy"] as LoopbackConnectionStrategy;
-            strategy?.ExposedConnection.SendMessage("test");
+            LoggingService.Info("Sending periodic client message...");
+            _clientStateController.Send("test");
         }
     }
 }

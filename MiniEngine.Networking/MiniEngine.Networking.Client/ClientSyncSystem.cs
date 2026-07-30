@@ -8,22 +8,32 @@ public class ClientSyncSystem : System
 {
     private ConnectionState _connectionState = new ConnectionState();
     private IConnection? _connection;
-    private IConnectionStrategy _connectionStrategy;
+    private readonly IConnectionStrategy _connectionStrategy;
+
     public enum Task
     {
         Connect,
         Disconnect,
         Ping,
+        Send,
     }
 
     public record ClientSyncTask(Task Task, IDictionary<string, object>? TaskParameters = null);
 
-    public ClientSyncSystem()
+    /// <summary>
+    /// Default constructor, used when the system is registered by type. Talks to a remote host.
+    /// </summary>
+    public ClientSyncSystem() : this(null)
     {
-        object? strategyObject = null;
-        GameContext.GameEngine?.Setup.AdditionalConfiguration?.TryGetValue("connection_strategy",
-            out strategyObject);
-        var connectionStrategy = (IConnectionStrategy?)strategyObject;
+    }
+
+    /// <summary>
+    /// Register with an explicit strategy via
+    /// <c>ecs.Register(new ClientSyncSystem(strategy))</c> to override how connections
+    /// are made, for example with a loopback for in-process client/server.
+    /// </summary>
+    public ClientSyncSystem(IConnectionStrategy? connectionStrategy)
+    {
         _connectionStrategy = connectionStrategy ?? new RemoteConnectionStrategy();
     }
 
@@ -54,6 +64,12 @@ public class ClientSyncSystem : System
                     break;
                 case Task.Ping:
 
+                    break;
+                case Task.Send:
+                    // The system owns the connection, so sending stays here rather than in
+                    // an entity reaching out for a strategy.
+                    if (syncTask.TaskParameters?.TryGetValue("message", out var message) == true)
+                        _connection?.SendMessage(message);
                     break;
             }
             // after task completion, update with latest connection state
