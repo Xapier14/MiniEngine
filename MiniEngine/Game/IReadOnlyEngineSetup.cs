@@ -8,6 +8,7 @@ public interface IReadOnlyEngineSetup
     public Size? WindowSize { get; }
     public float? FpsLimit { get; }
     public float? GameSpeed { get; }
+    public float? FixedTickRate { get; }
     public bool? DisableGamePad { get; }
     public bool? DisableCursor { get; }
     public bool? InvertYAxis { get; }

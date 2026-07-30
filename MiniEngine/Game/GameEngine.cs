@@ -3,7 +3,9 @@ using MiniEngine.Utility.Logging;
 using SDL2;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
+using System.Threading;
 using static SDL2.SDL;
 using static SDL2.SDL_image;
 using static SDL2.SDL_ttf;
@@ -130,7 +132,8 @@ namespace MiniEngine
             }
 
             TaskScheduler = new TaskScheduler();
-            EcsManager = new EcsManager();
+            EcsManager = new EcsManager(new WorldClock(1.0 / _setup.FixedTickRate.GetValueOrDefault(30f)));
+            EcsManager.Clock.TimeScale = _setup.GameSpeed.GetValueOrDefault(1f);
             AudioService = new AudioService(TaskScheduler);
             SceneManager = new SceneManager(EcsManager);
             InputManager = new InputManager(this, SceneManager);
@@ -304,10 +307,13 @@ namespace MiniEngine
                 LoggingService.Debug("Initializing default ECS systems...");
                 EcsManager.Reset();
 
-                EcsManager.RegisterAfter<MiniEngine.System>(typeof(ScriptSystem), ScriptEvent.BeforeUpdate);
-                EcsManager.RegisterAfter<ScriptSystem>(ScriptEvent.BeforeUpdate, typeof(ScriptSystem), ScriptEvent.Update);
-                EcsManager.RegisterAfter<ScriptSystem>(ScriptEvent.Update, typeof(ScriptSystem), ScriptEvent.AfterUpdate);
-                EcsManager.RegisterAfter<ScriptSystem>(new PhysicsSystem(Setup));
+                // Update events and physics are simulation: they step at a fixed rate so a
+                // tick covers the same amount of time everywhere. Draw events, animation
+                // and drawing are presentation and run once per frame.
+                EcsManager.RegisterAfter<MiniEngine.System>(typeof(ScriptSystem), ScriptEvent.BeforeUpdate, Cadence.Fixed);
+                EcsManager.RegisterAfter<ScriptSystem>(ScriptEvent.BeforeUpdate, typeof(ScriptSystem), ScriptEvent.Update, Cadence.Fixed);
+                EcsManager.RegisterAfter<ScriptSystem>(ScriptEvent.Update, typeof(ScriptSystem), ScriptEvent.AfterUpdate, Cadence.Fixed);
+                EcsManager.RegisterAfter<ScriptSystem>(new PhysicsSystem(Setup), null, Cadence.Fixed);
                 EcsManager.RegisterAfter<PhysicsSystem>(typeof(AnimationSystem));
                 EcsManager.RegisterAfter<AnimationSystem>(typeof(ScriptSystem), ScriptEvent.BeforeDraw);
                 EcsManager.RegisterAfter<ScriptSystem>(new DrawSystem(this));
@@ -451,13 +457,18 @@ namespace MiniEngine
             var initialWindowTitle = _setup.InitialWindowTitle ?? "MiniEngine Game Window";
             WindowManager.CreateWindow(initialWindowTitle);
 
+            var frameStopwatch = new Stopwatch();
             while (IsRunning)
             {
+                frameStopwatch.Restart();
+
                 Graphics.Tidy();
                 InputManager.UpdateState();
                 WindowManager.PumpEvents();
-                EcsManager.ProcessSystems();
+                EcsManager.Update();
                 TaskScheduler.UpdateAndExecute();
+
+                LimitFrameRate(frameStopwatch);
 
                 if (!_requestedHalt)
                     continue;
@@ -467,6 +478,22 @@ namespace MiniEngine
 
             GracefulExit();
             return false;
+        }
+
+        /// <summary>
+        /// Gives the rest of the frame back to the operating system when the setup asks for
+        /// an fps limit. Sleeps only whole milliseconds, so the loop runs a shade fast
+        /// rather than overshooting the frame it was asked to fit in.
+        /// </summary>
+        private void LimitFrameRate(Stopwatch frameStopwatch)
+        {
+            var limit = _setup.FpsLimit.GetValueOrDefault(0f);
+            if (limit <= 0f)
+                return;
+
+            var remainingMs = 1000.0 / limit - frameStopwatch.Elapsed.TotalMilliseconds;
+            if (remainingMs >= 1.0)
+                Thread.Sleep((int)remainingMs);
         }
     }
 }

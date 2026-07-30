@@ -25,11 +25,33 @@ namespace MiniEngine
         private Type? _currentlyExecutingSystem;
 
         /// <summary>
+        /// This world's time source. Simulation systems step against it at a fixed rate,
+        /// so a headless server and a client agree on what one tick means.
+        /// </summary>
+        public WorldClock Clock { get; }
+
+        /// <summary>
+        /// Rethrow exceptions escaping a component handler instead of only logging them.
+        /// Off by default so a game keeps drawing through a bad frame; a server should turn
+        /// it on, where swallowing the error would corrupt state instead of failing.
+        /// </summary>
+        public bool ThrowOnHandlerException { get; set; }
+
+        /// <summary>
         /// The world currently being processed. Set by <see cref="SceneManager"/>. Systems
         /// read world state (camera, background) from here rather than walking up from a
         /// component to its entity's scene.
         /// </summary>
         public Scene? ActiveScene { get; internal set; }
+
+        /// <param name="clock">
+        /// The world's time source. Defaults to 30 simulation steps per second; a host
+        /// wanting another rate constructs its own.
+        /// </param>
+        public EcsManager(WorldClock? clock = null)
+        {
+            Clock = clock ?? new WorldClock();
+        }
 
         internal IReadOnlyDictionary<Type, List<Component>> ComponentDiff => _componentDiff;
 
@@ -68,24 +90,24 @@ namespace MiniEngine
         /// when there is one, otherwise appended. A headless pipeline has no draw system,
         /// so anchoring on it unconditionally would drop every registration.
         /// </summary>
-        public void Register(Type systemType)
+        public void Register(Type systemType, Cadence cadence = Cadence.Frame)
         {
             if (_systemList.ContainsSystemType<DrawSystem>())
-                RegisterBefore<DrawSystem>(systemType);
+                RegisterBefore<DrawSystem>(systemType, null, cadence);
             else
-                RegisterAfter<System>(systemType);
+                RegisterAfter<System>(systemType, null, cadence);
         }
 
         /// <summary>
         /// Registers a host-constructed system, for systems needing dependencies the ECS
         /// knows nothing about (a <see cref="GameEngine"/>, a connection strategy, ...).
         /// </summary>
-        public void Register(System system)
+        public void Register(System system, Cadence cadence = Cadence.Frame)
         {
             if (_systemList.ContainsSystemType<DrawSystem>())
-                RegisterBefore<DrawSystem>(system);
+                RegisterBefore<DrawSystem>(system, null, cadence);
             else
-                RegisterAfter<System>(system);
+                RegisterAfter<System>(system, null, cadence);
         }
 
         private void UpdateSystemAssociation(Type systemType)
@@ -160,7 +182,7 @@ namespace MiniEngine
             return system;
         }
 
-        private void Link(System system, SystemNode? target, bool before, object? argument)
+        private void Link(System system, SystemNode? target, bool before, object? argument, Cadence cadence)
         {
             var systemType = system.GetType();
             system.Attach(this);
@@ -168,11 +190,11 @@ namespace MiniEngine
 
             if (target == null)
             {
-                _systemList.Add(system, argument);
+                _systemList.Add(system, argument, cadence);
             }
             else
             {
-                var node = new SystemNode { Value = system, Argument = argument };
+                var node = new SystemNode { Value = system, Argument = argument, Cadence = cadence };
                 if (before)
                     _systemList.InsertBefore(target, node);
                 else
@@ -182,32 +204,32 @@ namespace MiniEngine
             UpdateSystemAssociation(systemType);
         }
 
-        public void RegisterBefore<T>(Type systemType, object? argument = null) where T : System
-            => RegisterBefore<T>(null, systemType, argument);
+        public void RegisterBefore<T>(Type systemType, object? argument = null, Cadence cadence = Cadence.Frame) where T : System
+            => RegisterBefore<T>(null, systemType, argument, cadence);
 
-        public void RegisterBefore<T>(object? systemArg, Type systemType, object? argument = null) where T : System
+        public void RegisterBefore<T>(object? systemArg, Type systemType, object? argument = null, Cadence cadence = Cadence.Frame) where T : System
         {
             if (ResolveSystem(systemType) is { } system)
-                LinkBefore<T>(systemArg, system, argument);
+                LinkBefore<T>(systemArg, system, argument, cadence);
         }
 
         /// <summary>
         /// Registers a system the host constructed itself, for systems that need
         /// dependencies the ECS knows nothing about.
         /// </summary>
-        public void RegisterBefore<T>(System system, object? argument = null) where T : System
-            => LinkBefore<T>(null, AdoptSystem(system), argument);
+        public void RegisterBefore<T>(System system, object? argument = null, Cadence cadence = Cadence.Frame) where T : System
+            => LinkBefore<T>(null, AdoptSystem(system), argument, cadence);
 
-        public void RegisterBefore<T>(object? systemArg, System system, object? argument = null) where T : System
-            => LinkBefore<T>(systemArg, AdoptSystem(system), argument);
+        public void RegisterBefore<T>(object? systemArg, System system, object? argument = null, Cadence cadence = Cadence.Frame) where T : System
+            => LinkBefore<T>(systemArg, AdoptSystem(system), argument, cadence);
 
-        private void LinkBefore<T>(object? systemArg, System system, object? argument) where T : System
+        private void LinkBefore<T>(object? systemArg, System system, object? argument, Cadence cadence) where T : System
         {
             // T == System means "append to the end of the pipeline", which is not the same
             // as an anchor that could not be found.
             if (typeof(T) == typeof(System))
             {
-                Link(system, null, before: true, argument);
+                Link(system, null, before: true, argument, cadence);
                 return;
             }
 
@@ -218,35 +240,35 @@ namespace MiniEngine
                     system.GetType().Name, typeof(T).Name);
                 return;
             }
-            Link(system, target, before: true, argument);
+            Link(system, target, before: true, argument, cadence);
         }
 
-        public void RegisterAfter<T>(Type systemType, object? argument = null) where T : System
-            => RegisterAfter<T>(null, systemType, argument);
+        public void RegisterAfter<T>(Type systemType, object? argument = null, Cadence cadence = Cadence.Frame) where T : System
+            => RegisterAfter<T>(null, systemType, argument, cadence);
 
-        public void RegisterAfter<T>(object? systemArg, Type systemType, object? argument = null) where T : System
+        public void RegisterAfter<T>(object? systemArg, Type systemType, object? argument = null, Cadence cadence = Cadence.Frame) where T : System
         {
             if (ResolveSystem(systemType) is { } system)
-                LinkAfter<T>(systemArg, system, argument);
+                LinkAfter<T>(systemArg, system, argument, cadence);
         }
 
         /// <summary>
         /// Registers a system the host constructed itself, for systems that need
         /// dependencies the ECS knows nothing about.
         /// </summary>
-        public void RegisterAfter<T>(System system, object? argument = null) where T : System
-            => LinkAfter<T>(null, AdoptSystem(system), argument);
+        public void RegisterAfter<T>(System system, object? argument = null, Cadence cadence = Cadence.Frame) where T : System
+            => LinkAfter<T>(null, AdoptSystem(system), argument, cadence);
 
-        public void RegisterAfter<T>(object? systemArg, System system, object? argument = null) where T : System
-            => LinkAfter<T>(systemArg, AdoptSystem(system), argument);
+        public void RegisterAfter<T>(object? systemArg, System system, object? argument = null, Cadence cadence = Cadence.Frame) where T : System
+            => LinkAfter<T>(systemArg, AdoptSystem(system), argument, cadence);
 
-        private void LinkAfter<T>(object? systemArg, System system, object? argument) where T : System
+        private void LinkAfter<T>(object? systemArg, System system, object? argument, Cadence cadence) where T : System
         {
             // T == System means "append to the end of the pipeline", which is not the same
             // as an anchor that could not be found.
             if (typeof(T) == typeof(System))
             {
-                Link(system, null, before: false, argument);
+                Link(system, null, before: false, argument, cadence);
                 return;
             }
 
@@ -257,7 +279,7 @@ namespace MiniEngine
                     system.GetType().Name, typeof(T).Name);
                 return;
             }
-            Link(system, target, before: false, argument);
+            Link(system, target, before: false, argument, cadence);
         }
 
         public void RegisterEntity(Entity entity)
@@ -457,42 +479,68 @@ namespace MiniEngine
             return system;
         }
 
-        public void ProcessSystems()
+        /// <summary>
+        /// Advances this world by one frame: the simulation catches up in whole fixed
+        /// steps, then presentation runs once. Hosts call this from their loop.
+        /// </summary>
+        public void Update()
         {
-            IEnumerable<SystemNode>? systemList = _systemList;
-            var tickList = new List<System>();
-            foreach (var system in systemList)
+            Clock.BeginFrame();
+            while (Clock.ConsumeFixedStep())
+                ProcessCadence(Cadence.Fixed);
+            ProcessCadence(Cadence.Frame);
+        }
+
+        /// <summary>
+        /// Runs one frame. Retained as the name hosts already call; see <see cref="Update"/>.
+        /// </summary>
+        public void ProcessSystems()
+            => Update();
+
+        private void ProcessCadence(Cadence cadence)
+        {
+            // A fixed step is always the same length, whatever the frame rate or time
+            // scale. Scaling time changes how many steps are taken, never how big one is,
+            // which is what keeps a tick meaning the same thing on every machine.
+            var delta = cadence == Cadence.Fixed ? Clock.FixedDelta : Clock.FrameDelta;
+
+            foreach (var node in (IEnumerable<SystemNode>)_systemList)
             {
-                if (system.Value == null)
+                if (node.Value == null || node.Cadence != cadence)
                     continue;
-                if (!tickList.Contains(system.Value))
-                {
-                    system.Value.UpdateTick();
-                    tickList.Add(system.Value);
-                }
-                if (!_components.TryGetValue(system.Value.GetType(), out var componentList))
+
+                node.Value.DeltaTime = delta;
+                if (!_components.TryGetValue(node.Value.GetType(), out var componentList))
                     continue;
-                _currentlyExecutingSystem = system.Value.GetType();
-                system.Value?.HandleComponents(this, componentList, system.Argument);
+                _currentlyExecutingSystem = node.Value.GetType();
+                node.Value.HandleComponents(this, componentList, node.Argument);
                 _currentlyExecutingSystem = null;
-                // process diff list
-                foreach (var (systemType, diffList) in ComponentDiff)
+                ApplyComponentDiff();
+            }
+        }
+
+        /// <summary>
+        /// Folds in registrations and removals that happened while a system was iterating
+        /// its own component list, which could not be applied at the time.
+        /// </summary>
+        private void ApplyComponentDiff()
+        {
+            foreach (var (systemType, diffList) in ComponentDiff)
+            {
+                var realComponentList = _components[systemType];
+                foreach (var diff in diffList)
                 {
-                    var realComponentList = _components[systemType];
-                    foreach (var diff in diffList)
+                    if (realComponentList.Contains(diff))
                     {
-                        if (realComponentList.Contains(diff))
-                        {
-                            realComponentList.Remove(diff);
-                        }
-                        else
-                        {
-                            realComponentList.Add(diff);
-                        }
+                        realComponentList.Remove(diff);
+                    }
+                    else
+                    {
+                        realComponentList.Add(diff);
                     }
                 }
-                _componentDiff.Clear();
             }
+            _componentDiff.Clear();
         }
     }
 }

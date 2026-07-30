@@ -26,10 +26,9 @@ namespace MiniEngine
 
         public void HandleComponent(Motion motionComponent)
         {
-            var delta = (_setup?.GameSpeed).GetValueOrDefault(1f) * DeltaTimeF;
-
-            var acceleration = motionComponent.Acceleration;
-            motionComponent.Velocity += acceleration * delta;
+            // No game speed factor here any more: it is a property of time itself, applied
+            // once by the WorldClock, so a system that reapplied it would scale twice.
+            motionComponent.Velocity += motionComponent.Acceleration * DeltaTimeF;
         }
 
         protected override void AfterStep(object? arg)

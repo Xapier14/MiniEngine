@@ -12,6 +12,14 @@ namespace MiniEngine.Collections
         public System? Value { get; set; }
         public object? Argument { get; set; }
 
+        /// <summary>
+        /// How often this node runs. Per node rather than per system type, because one
+        /// system can appear in the pipeline several times with different arguments:
+        /// <see cref="ScriptSystem"/>'s update events are simulation and its draw events
+        /// are presentation, and they need different rates.
+        /// </summary>
+        public Cadence Cadence { get; set; } = Cadence.Frame;
+
         public static implicit operator (System, object?)(SystemNode node) => (node.Value!, node.Argument);
     }
 
@@ -155,7 +163,7 @@ namespace MiniEngine.Collections
             var type = typeof(T);
             foreach (var node in (IEnumerable<SystemNode>)this)
             {
-                if (node.Value?.GetType() == type && node.Argument == data)
+                if (node.Value?.GetType() == type && Equals(node.Argument, data))
                     return (node.Value, node.Argument);
             }
 
@@ -165,14 +173,18 @@ namespace MiniEngine.Collections
         public SystemNode? FindFirstSystemNodeBySystemType<T>(object? data = null) where T : System
         {
             var type = typeof(T);
-            return this.FirstOrDefault<SystemNode>(system => system.Value?.GetType() == type && (system.Argument == data || system.Argument == null));
+            return this.FirstOrDefault<SystemNode>(system => system.Value?.GetType() == type && (Equals(system.Argument, data) || system.Argument == null));
         }
 
         public SystemNode? FindLastSystemNodeBySystemType<T>(object? data = null) where T : System
         {
             var type = typeof(T);
+            // Arguments are compared with Equals, not ==: they arrive boxed, so == is
+            // reference equality and two boxes of the same enum value would not match.
+            // The previous cast to ScriptEvent also threw for any system registered with
+            // an argument of another type.
             return this.LastOrDefault<SystemNode>(
-                system => system.Value?.GetType() == type && (system.Argument == null || data == null || (ScriptEvent)system.Argument == (ScriptEvent)data));
+                system => system.Value?.GetType() == type && (system.Argument == null || data == null || Equals(system.Argument, data)));
         }
 
         public int Count()
@@ -188,14 +200,15 @@ namespace MiniEngine.Collections
             return count;
         }
 
-        public void Add(System system, object? argument = null)
+        public void Add(System system, object? argument = null, Cadence cadence = Cadence.Frame)
         {
             if (_head is null)
             {
                 _head = new SystemNode
                 {
                     Value = system,
-                    Argument = argument
+                    Argument = argument,
+                    Cadence = cadence
                 };
                 return;
             }
@@ -206,6 +219,7 @@ namespace MiniEngine.Collections
             {
                 Value = system,
                 Argument = argument,
+                Cadence = cadence,
                 Previous = lastNode
             };
             lastNode.Next = newNode;

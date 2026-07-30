@@ -11,7 +11,7 @@ public class EngineSetup : IReadOnlyEngineSetup
         InitialWindowTitle = "MiniEngine Game",
         AssetsFile = "assets.mea",
         InvertYAxis = false,
-        GameSpeed = 60f
+        GameSpeed = 1f
     };
 
     /// <summary>
@@ -30,10 +30,17 @@ public class EngineSetup : IReadOnlyEngineSetup
     public float? FpsLimit { get; set; }
 
     /// <summary>
-    /// The target game speed used for frame rate independent calculations.
-    /// For physics calculations.
+    /// How fast time passes, where 1.0 is realtime. Slowing time down takes fewer
+    /// simulation steps per second rather than smaller ones, so a step always covers
+    /// <see cref="FixedTickRate"/> worth of simulation whatever this is set to.
     /// </summary>
     public float? GameSpeed { get; set; } = 1f;
+
+    /// <summary>
+    /// Simulation steps per second. Systems registered at <see cref="Cadence.Fixed"/> run
+    /// at this rate regardless of frame rate; everything else runs once per frame.
+    /// </summary>
+    public float? FixedTickRate { get; set; } = 30f;
 
     /// <summary>
     /// Disables the Gamepad API.
@@ -83,6 +90,9 @@ public class EngineSetup : IReadOnlyEngineSetup
 
         if (setup.GameSpeed != null)
             GameSpeed = setup.GameSpeed;
+
+        if (setup.FixedTickRate != null)
+            FixedTickRate = setup.FixedTickRate;
 
         if (setup.DisableCursor != null)
             DisableCursor = setup.DisableCursor;

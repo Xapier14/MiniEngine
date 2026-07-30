@@ -9,8 +9,14 @@ namespace MiniEngine
     public abstract class System
     {
         private readonly Dictionary<(Type, bool), MethodInfo> _methodCache = new();
-        private long? _lastTick;
-        public double DeltaTime { get; private set; }
+
+        /// <summary>
+        /// Seconds elapsed for this step. Assigned by <see cref="EcsManager"/> before each
+        /// dispatch: exactly <see cref="WorldClock.FixedDelta"/> for a
+        /// <see cref="Cadence.Fixed"/> node, and the measured frame time for a
+        /// <see cref="Cadence.Frame"/> one.
+        /// </summary>
+        public double DeltaTime { get; internal set; }
         public float DeltaTimeF => (float)DeltaTime;
 
         /// <summary>
@@ -42,20 +48,6 @@ namespace MiniEngine
                 var handledComponentType = method.GetParameters()[0].ParameterType;
                 var hasOtherArg = method.GetParameters().Length > 1;
                 _methodCache.TryAdd((handledComponentType, hasOtherArg), method);
-            }
-        }
-
-        internal void UpdateTick()
-        {
-            if (_lastTick is { } lastTick)
-            {
-                var thisTick = DateTime.Now.Ticks;
-                DeltaTime = Math.Min(TimeSpan.FromTicks(thisTick - lastTick).TotalMilliseconds / 1000.0, 0.25);
-                _lastTick = thisTick;
-            }
-            else
-            {
-                _lastTick = DateTime.Now.Ticks;
             }
         }
 
@@ -115,6 +107,11 @@ namespace MiniEngine
                         e,
                         component.GetType().Name,
                         GetType().Name);
+                    // A swallowed handler exception is invisible at Trace level, which is
+                    // fine for a game that should keep drawing but wrong for a server,
+                    // where it would silently corrupt state instead of failing.
+                    if (ecsManager.ThrowOnHandlerException)
+                        throw;
                 }
             }
             AfterStep(arg);
